@@ -1,6 +1,6 @@
 add_executable(CharacterFX_Tests
-    test_throwaway_one_pole.cpp
-    ../Source/DSP/ThrowawayOnePoleLowPass.cpp)
+    test_tilteq.cpp
+    ../Source/DSP/TiltEQ.cpp)
 
 target_include_directories(CharacterFX_Tests
     PRIVATE
@@ -8,7 +8,10 @@ target_include_directories(CharacterFX_Tests
 
 target_link_libraries(CharacterFX_Tests
     PRIVATE
-        Catch2::Catch2WithMain)
+        Catch2::Catch2WithMain
+        juce::juce_dsp
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
 
 include(Catch)
 catch_discover_tests(CharacterFX_Tests)

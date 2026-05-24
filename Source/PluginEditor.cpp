@@ -2,7 +2,7 @@
 
 namespace {
 constexpr auto gainParameterId = "inputGain";
-constexpr auto cutoffParameterId = "cutoffHz";
+constexpr auto tiltParameterId = "tiltDb";
 
 void configureSlider(juce::Slider& slider) {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -19,19 +19,18 @@ FlorescenceAudioProcessorEditor::FlorescenceAudioProcessorEditor(
     FlorescenceAudioProcessor& ownerProcessor)
     : AudioProcessorEditor(&ownerProcessor), audioProcessor(ownerProcessor) {
     configureSlider(gainSlider);
-    configureSlider(cutoffSlider);
+    configureSlider(tiltSlider);
     configureLabel(gainLabel, "Gain");
-    configureLabel(cutoffLabel, "Low Pass");
+    configureLabel(tiltLabel, "Tilt");
 
     addAndMakeVisible(gainSlider);
-    addAndMakeVisible(cutoffSlider);
+    addAndMakeVisible(tiltSlider);
     addAndMakeVisible(gainLabel);
-    addAndMakeVisible(cutoffLabel);
+    addAndMakeVisible(tiltLabel);
 
     auto& parameters = audioProcessor.getParameters();
     gainAttachment = std::make_unique<SliderAttachment>(parameters, gainParameterId, gainSlider);
-    cutoffAttachment =
-        std::make_unique<SliderAttachment>(parameters, cutoffParameterId, cutoffSlider);
+    tiltAttachment = std::make_unique<SliderAttachment>(parameters, tiltParameterId, tiltSlider);
 
     setSize(360, 220);
 }
@@ -53,6 +52,6 @@ void FlorescenceAudioProcessorEditor::resized() {
 
     gainLabel.setBounds(left.removeFromTop(24));
     gainSlider.setBounds(left);
-    cutoffLabel.setBounds(right.removeFromTop(24));
-    cutoffSlider.setBounds(right);
+    tiltLabel.setBounds(right.removeFromTop(24));
+    tiltSlider.setBounds(right);
 }

@@ -4,14 +4,18 @@
 
 namespace {
 constexpr auto gainParameterId = "inputGain";
-constexpr auto cutoffParameterId = "cutoffHz";
+constexpr auto tiltParameterId = "tiltDb";
 } // namespace
 
 FlorescenceAudioProcessor::FlorescenceAudioProcessor()
     : AudioProcessor(BusesProperties()
                          .withInput("Input", juce::AudioChannelSet::stereo(), true)
                          .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-      parameters(*this, nullptr, "Parameters", createParameterLayout()) {}
+      parameters(*this, nullptr, "Parameters", createParameterLayout()) {
+    auto tiltModule = std::make_unique<TiltEQ>();
+    tiltEq = tiltModule.get();
+    fxChain.push_back(std::move(tiltModule));
+}
 
 juce::AudioProcessorValueTreeState::ParameterLayout
 FlorescenceAudioProcessor::createParameterLayout() {
@@ -23,9 +27,9 @@ FlorescenceAudioProcessor::createParameterLayout() {
         juce::AudioParameterFloatAttributes().withLabel("dB")));
 
     layout.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{cutoffParameterId, 1}, "Low Pass",
-        juce::NormalisableRange<float>{20.0f, 20000.0f, 0.01f, 0.35f}, 20000.0f,
-        juce::AudioParameterFloatAttributes().withLabel("Hz")));
+        juce::ParameterID{tiltParameterId, 1}, "Tilt",
+        juce::NormalisableRange<float>{dspconfig::tiltEqMinDb, dspconfig::tiltEqMaxDb, 0.01f}, 0.0f,
+        juce::AudioParameterFloatAttributes().withLabel("dB")));
 
     return {layout.begin(), layout.end()};
 }
@@ -66,8 +70,17 @@ const juce::String FlorescenceAudioProcessor::getProgramName(int) {
 
 void FlorescenceAudioProcessor::changeProgramName(int, const juce::String&) {}
 
-void FlorescenceAudioProcessor::prepareToPlay(const double sampleRate, int) {
-    lowPass.prepare(sampleRate, static_cast<std::size_t>(getTotalNumOutputChannels()));
+void FlorescenceAudioProcessor::prepareToPlay(const double sampleRate, const int samplesPerBlock) {
+    const juce::dsp::ProcessSpec spec{sampleRate, static_cast<juce::uint32>(samplesPerBlock),
+                                      static_cast<juce::uint32>(getTotalNumOutputChannels())};
+
+    auto totalLatencySamples = 0;
+    for (auto& module : fxChain) {
+        module->prepare(spec);
+        totalLatencySamples += module->getLatencySamples();
+    }
+
+    setLatencySamples(totalLatencySamples);
 }
 
 void FlorescenceAudioProcessor::releaseResources() {}
@@ -93,18 +106,17 @@ void FlorescenceAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
         buffer.clear(channel, 0, buffer.getNumSamples());
 
     const auto gainDb = parameters.getRawParameterValue(gainParameterId)->load();
-    const auto cutoffHz = parameters.getRawParameterValue(cutoffParameterId)->load();
+    const auto tiltDb = parameters.getRawParameterValue(tiltParameterId)->load();
     const auto gain = juce::Decibels::decibelsToGain(gainDb);
 
-    lowPass.setCutoffHz(cutoffHz);
+    if (tiltEq != nullptr)
+        tiltEq->setTiltDb(tiltDb);
 
-    const auto channelCount = std::min(totalInputChannels, totalOutputChannels);
-    for (auto channel = 0; channel < channelCount; ++channel) {
-        auto* samples = buffer.getWritePointer(channel);
-        for (auto sample = 0; sample < buffer.getNumSamples(); ++sample)
-            samples[sample] =
-                lowPass.processSample(static_cast<std::size_t>(channel), samples[sample] * gain);
-    }
+    buffer.applyGain(gain);
+
+    auto block = juce::dsp::AudioBlock<float>(buffer);
+    for (auto& module : fxChain)
+        module->process(block);
 }
 
 bool FlorescenceAudioProcessor::hasEditor() const {
