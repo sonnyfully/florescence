@@ -16,12 +16,13 @@ Stage 2 exists to move from plumbing into real DSP. Tilt EQ is the safest first 
 
 ## Testing
 
-Planned:
+Current:
 
-- Add deterministic unit tests for Tilt EQ frequency response and stereo coherence.
-- Build the plugin targets locally.
-- Run the Catch2 test target.
-- Manually confirm the existing front-panel control maps directly to Tilt amount.
+- `cmake -S . -B build-juce8`
+- `cmake --build build-juce8 --target CharacterFX_All CharacterFX_Tests CharacterFX_PluginSmokeTests`
+- `ctest --test-dir build-juce8 --output-on-failure`
+
+All five discovered tests pass: zero-tilt flat response, positive tilt response, negative tilt response, stereo coherence, and VST3 parameter smoke test.
 
 ## Stop points
 

@@ -2,7 +2,7 @@
 
 #include <juce_audio_processors_headless/juce_audio_processors_headless.h>
 
-TEST_CASE("built VST3 loads and exposes throwaway parameters") {
+TEST_CASE("built VST3 loads and exposes stage 2 tilt parameters") {
     juce::VST3PluginFormatHeadless format;
     juce::OwnedArray<juce::PluginDescription> descriptions;
 
@@ -32,5 +32,5 @@ TEST_CASE("built VST3 loads and exposes throwaway parameters") {
         parameterNames.add(parameter->getName(64));
 
     REQUIRE(parameterNames.contains("Gain"));
-    REQUIRE(parameterNames.contains("Low Pass"));
+    REQUIRE(parameterNames.contains("Tilt"));
 }

@@ -2,7 +2,11 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
-#include "DSP/ThrowawayOnePoleLowPass.h"
+#include "DSP/FXModule.h"
+#include "DSP/TiltEQ.h"
+
+#include <memory>
+#include <vector>
 
 class FlorescenceAudioProcessor final : public juce::AudioProcessor {
   public:
@@ -43,7 +47,8 @@ class FlorescenceAudioProcessor final : public juce::AudioProcessor {
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     juce::AudioProcessorValueTreeState parameters;
-    ThrowawayOnePoleLowPass lowPass;
+    std::vector<std::unique_ptr<FXModule>> fxChain;
+    TiltEQ* tiltEq = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FlorescenceAudioProcessor)
 };

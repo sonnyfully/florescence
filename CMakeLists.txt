@@ -14,9 +14,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(CHARACTERFX_BUILD_PLUGIN "Build the JUCE plugin targets" ON)
 option(CHARACTERFX_BUILD_TESTS "Build the Catch2 test suite" ON)
 
-if(CHARACTERFX_BUILD_PLUGIN)
+if(CHARACTERFX_BUILD_PLUGIN OR CHARACTERFX_BUILD_TESTS)
     if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/JUCE/CMakeLists.txt")
-        message(FATAL_ERROR "JUCE is required at external/JUCE. Add it before configuring Stage 1.")
+        message(FATAL_ERROR "JUCE is required at external/JUCE. Add it before configuring.")
     endif()
 
     add_subdirectory(external/JUCE)
@@ -49,7 +49,7 @@ if(CHARACTERFX_BUILD_PLUGIN)
 
     target_sources(CharacterFX
         PRIVATE
-            Source/DSP/ThrowawayOnePoleLowPass.cpp
+            Source/DSP/TiltEQ.cpp
             Source/PluginEditor.cpp
             Source/PluginProcessor.cpp)
 
@@ -64,6 +64,7 @@ if(CHARACTERFX_BUILD_PLUGIN)
         PRIVATE
             juce::juce_audio_processors
             juce::juce_audio_utils
+            juce::juce_dsp
             juce::juce_gui_basics
         PUBLIC
             juce::juce_recommended_config_flags
