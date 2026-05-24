@@ -44,7 +44,7 @@ Pinned reference tracks (the A/B targets for preset design — listed in `docs/a
 
 ## Stack — decided
 
-- **Framework: JUCE 7.x.** C++20. Industry standard for AU/VST3, mature, well-documented, free for revenue under $50k.
+- **Framework: JUCE 8.x.** C++20. Industry standard for AU/VST3, mature, well-documented, free for revenue under $50k.
 - **Build: CMake.** Modern JUCE supports it cleanly, scales to CI.
 - **DSP utilities: chowdsp_utils.** Jatin Chowdhury's open-source JUCE library. Saves weeks on saturation, filter, modulation primitives. MIT licensed.
 - **Convolution: `juce::dsp::Convolution`.** Partitioned convolution, zero-latency mode available, handles stereo IRs.
@@ -72,11 +72,11 @@ Full week-by-week roadmap with goals, end states, scope, and stop points per sta
 
 ## Current focus
 
-- **Phase:** Stage 0 — Pre-flight
-- **Active branch:** main (repository initialization only; feature branches begin after initial scaffold)
-- **Module being worked on:** none — Stage 0 is no-code setup
-- **Open question being answered:** none currently
-- **Blockers:** domain registration, reference tracks, private beta customer list, Figma file, Lemon Squeezy account
+- **Phase:** Stage 1 — Plumbing verified on branch; Stage 0 external deliverables still block merge.
+- **Active branch:** `feature/plumbing`
+- **Module being worked on:** none; Stage 1 plumbing is ready for PR review.
+- **Open question being answered:** none currently.
+- **Blockers:** domain registration, reference tracks, private beta customer list, Figma file, Lemon Squeezy account.
 
 ## Scope and timeline
 

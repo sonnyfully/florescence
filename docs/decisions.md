@@ -38,6 +38,16 @@ Resolved from `docs/open_questions.md`: Q-IR-1.
 - Risk: licence terms on "free" libraries can change or may not allow redistribution. Re-verify current licence terms in Stage 4 before any IR enters `Resources/IRs/`.
 - Affected files: `Resources/IRs/`, `docs/research/ir-sourcing.md`, future reverb packaging/licensing notes.
 
+## 2026-05-24 — Use current JUCE stable for Stage 1
+
+Resolved from `docs/open_questions.md`: Q-BUILD-1.
+
+- Decision: move the JUCE submodule from JUCE 7.0.12 to JUCE 8.0.12.
+- Rationale: JUCE 7.0.12 is the latest JUCE 7 tag, but its `juceaide` helper does not compile against the installed Xcode 26/macOS SDK because `CGWindowListCreateImage` is marked unavailable. GitHub marks JUCE 8.0.12 as the latest stable release, and this is the least invasive path if it configures and builds cleanly.
+- Considered and rejected: installing an older Xcode/macOS SDK as the default path, because it adds local toolchain fragility; carrying a local patch to JUCE 7, because vendor patches create maintenance drag before the plugin has shipped.
+- Risk: JUCE 8 may introduce API or behaviour differences from the original JUCE 7.x plan. Keep Stage 1 minimal and document any compatibility changes as they appear.
+- Affected files: `external/JUCE`, `CMakeLists.txt`, `docs/CONTEXT.md`, `docs/roadmap.md`.
+
 ## Unresolved Stage 0 Stop Points
 
 These remain before Stage 0 is complete:

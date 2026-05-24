@@ -6,6 +6,7 @@ docs/customers.md
 
 # Build outputs
 build/
+build-*/
 cmake-build-*/
 DerivedData/
 

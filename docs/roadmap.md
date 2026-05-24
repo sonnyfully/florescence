@@ -59,7 +59,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 **Goal:** Prove the entire build → load → iterate loop works on a trivial plugin, before any real DSP lands.
 
 **End state:**
-- JUCE 7.x checked out, CMake project building `CharacterFX_AU`, `CharacterFX_VST3`, and `CharacterFX_Standalone` targets.
+- Current JUCE stable checked out, CMake project building `CharacterFX_AU`, `CharacterFX_VST3`, and `CharacterFX_Standalone` targets.
 - Throwaway plugin: gain + 1-pole low-pass filter, two knobs, ugly default GUI.
 - Builds clean on local Mac (Apple Silicon).
 - Loads in Ableton Live as AU and VST3, audio passes through, knobs work, parameter automation works.
@@ -396,7 +396,7 @@ A few rules that apply across every stage:
 Stage status in this file (update as work progresses):
 
 - Stage 0 — Pre-flight — **IN PROGRESS** (2026-05-24)
-- Stage 1 — Plumbing — NOT STARTED
+- Stage 1 — Plumbing — **DONE ON BRANCH** (2026-05-24, verified locally; merge blocked by Stage 0 external deliverables)
 - Stage 2 — Tilt EQ + Saturation — NOT STARTED
 - Stage 3 — Chorus + Filter — NOT STARTED
 - Stage 4 — Delay + ConvReverb — NOT STARTED
