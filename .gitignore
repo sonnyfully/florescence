@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+
+# Local/private project notes
+docs/customers.md
+
+# Build outputs
+build/
+cmake-build-*/
+DerivedData/
+
+# JUCE/plugin outputs
+*.component
+*.vst3
+*.pkg
+*.dmg
+
+# IDE/editor state
+.idea/
+.vscode/
+*.swp
+
+# Test/runtime output
+Testing/
+*.log
+
+# Python/Jupyter scratch state
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+
+# Signing/notarization secrets
+*.p12
+*.cer
+*.mobileprovision
+notarytool-profile.json
