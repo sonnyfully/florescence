@@ -8,7 +8,7 @@ Use this as a working checklist for external, taste, account, and launch items t
 - [ ] Pin 5 reference tracks in a playlist.
 - [ ] Fill out `docs/aesthetic/reference-tracks.md` with those 5 tracks and notes.
 - [ ] Write 5 named beta customers in local ignored `docs/customers.md`.
-- [ ] Start the Figma file with colour palette, typography, knob style, and rough 7-macro layout.
+- [ ] Start the Figma file with colour palette, typography, knob style, and rough layout for the three macros, Character switch, and global controls.
 - [ ] Add the Figma link to `docs/decisions.md`.
 - [ ] Create the Lemon Squeezy account.
 

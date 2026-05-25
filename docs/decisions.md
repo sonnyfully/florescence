@@ -239,3 +239,70 @@ These remain before Stage 0 is complete:
 - Write 5 named beta customers to local ignored `docs/customers.md`.
 - Start Figma file and record the link here.
 - Create Lemon Squeezy account.
+
+## 2026-05-25 — North-star alignment and control surface lock
+
+### Decision
+
+Florescence is an atmosphere processor for nocturnal electronic music.
+
+Product positioning:
+
+- Category: atmosphere processor, not tape saturator, utility channel strip, or general-purpose multi-effect.
+- Use case: bus tool for synth bus, vocal bus, and mix bus.
+- Audience: producers making nocturnal electronic music: dark R&B/pop, industrial electronic, cinematic synth work, and related atmospheric production.
+- Differentiation: a discrete three-mode Character switch plus atmosphere-named macros. The DSP chain is implementation detail; the producer-facing mental model is Atmosphere, Burn, Pulse, Velvet, Onyx, and Chrome.
+
+Locked v1 control surface:
+
+- **Atmosphere** — meta-macro. Scales Burn, Pulse, and convolution reverb wet level together along curated curves. The exact per-target curve is open in Q-MAC-3.
+- **Burn** — density/thickness/saturation axis. Drives saturation amount, low-mid emphasis in post-saturation tone shaping, and possibly chorus depth if Q-MAC-4 resolves that way.
+- **Pulse** — motion/life axis. Drives chorus rate/depth, delay modulation depth, convolution reverb wet-path modulation, and other time-varying behaviour.
+- **Character switch** — three-position segmented control: Velvet, Onyx, Chrome. It applies a curated parameter snapshot; macros then modulate within that mode.
+- **Day/Night** — global brightness shift as a final stage. Day is slightly more open around 8kHz; Night is slightly darker and more compressed up top. Visibility default is open in Q-GUI-4.
+- **Output** — vertical output trim, -inf to +12dB, default 0dB.
+- **Dry/Wet** — mix control, 0% to 100%, default 100% wet.
+- **Stereo width** — not locked. Q-GUI-3 decides whether it is a top-level control, secondary-panel control, mode-owned behaviour, or absent in v1.
+
+Character switch modes:
+
+- **Velvet** — soft, seductive, warm. Kissland / After Hours register. Gentler asymmetric saturation, warm upper-mid emphasis, warm plates/chambers, slower deeper chorus, gentle filtering.
+- **Onyx** — cold, hard, menacing. Gesaffelstein / industrial register. Harder saturation, upper-mid bite, concrete/metallic/dark spaces, tighter mechanical chorus, more aggressive filter resonance options.
+- **Chrome** — clean, polished, futurist. Dawn FM / Blade Runner 2049 register. Cleanest saturation from the Stage 2 soft-clip + dynamic LPF baseline, clean halls/bright chambers, lush glossy chorus, neutral controlled filtering.
+
+Explicitly cut from v1:
+
+- Per-module bypass buttons on the main UI.
+- Sub-parameter exposure on the main UI, including individual delay times, chorus rates, and filter cutoffs.
+- Audio visualisations: no spectrum analyser, waveform display, or gain-reduction meter.
+- Prominent preset browser; v1 gets a small dropdown at the top of the UI.
+- XY pad; designed out of v1 and may return in v1.x.
+- Tape/cassette emulation as the product category.
+
+### Rationale
+
+"Atmosphere processor" is the clearest category because it names the outcome the buyer wants: make a source feel placed inside a nocturnal cinematic scene. "Tape saturator" over-weights one module and drags the product toward lo-fi/cassette expectations that are not the center of gravity.
+
+Three macros are enough because the product needs a small expressive surface, not a translated DSP rack. Atmosphere is the "more of this" meta control, Burn is the density axis, and Pulse is the motion axis. They name musical intentions rather than implementation details, which keeps the UI aligned with the product thesis.
+
+The discrete Character switch is preferable to adding more macros because the three registers are taste snapshots, not continuous technical dimensions. Velvet, Onyx, and Chrome cover the intended nocturnal-cinematic axis: seductive/warm, menacing/industrial, and polished/futurist. A switch lets one plugin serve those sub-regions while preserving a decisive identity in each mode.
+
+### Supersedes / modifies prior decisions
+
+- Prior Q-MAC macro names are obsolete where they refer to Character / Tone / Space as top-level macros.
+- Q-SAT-2 still stands as a curve-shape question, but it is now the **Burn drive curve**, not the Character drive curve.
+- The "Character macro" referenced in Q-SAT-5 and the Stage 2 saturation decision should be read historically as the pre-renaming drive macro. The new user-facing control is Burn with narrowed scope.
+- Q-MAC-1 is unchanged: macro curves remain hand-crafted and human-reviewed.
+- Q-MAC-2 is superseded. Atmosphere intentionally overlaps with Burn, Pulse, and reverb wet. Overlap among Burn and Pulse remains open only where Q-MAC-4 touches it.
+- Q-IR-3 is superseded. Space no longer exists as a macro; Atmosphere drives reverb wet per Q-MAC-3, and Character mode controls or biases reverb identity per Q-CHAR-2.
+- Q-PRE-1 and Q-PRE-2 are superseded by Q-PRE-1-REVISED and Q-PRE-2-REVISED.
+
+### Follow-ups
+
+Do not execute these in this docs PR:
+
+1. `refactor: rename macro parameters Character->Burn, Space->Atmosphere, add Pulse, add CharacterMode` — C++ rename PR touching `Source/Params/MacroMapping.cpp`, parameter IDs, all references. Proposed parameter changes: `character` -> `burn`, `space` -> `atmosphere`, remove/fold `tone`, add `pulse`, add `character_mode`, keep/add `mix` and output trim, and add Day/Night plus any width parameter after Q-GUI-3/Q-GUI-4. State preservation for existing user presets is N/A because there is no v1 release yet.
+2. `feature: implement Atmosphere meta-macro routing` — wire Atmosphere to modulate Burn, Pulse, and reverb wet via the curve resolved in Q-MAC-3.
+3. `feature: implement Character switch and CharacterPreset data structure` — add the discrete mode selector and its parameter snapshots.
+4. `feature: implement Day/Night brightness stage and visibility setting` — add final brightness shelf behaviour and the secondary-panel hide/reveal setting after Q-GUI-4.
+5. `feature: revise preset schema and categories` — move from source-typed categories to the themed preset split after Q-PRE-1-REVISED and Q-PRE-2-REVISED are resolved.

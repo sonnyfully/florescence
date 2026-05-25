@@ -2,6 +2,8 @@
 
 The saturation stage is the single most aesthetically-loaded module in the chain. It runs after Tilt EQ, before Chorus (and in v2, before the neural voicing stage). Get it right and the whole chain has a center of gravity. Get it wrong and the plugin sounds generic.
 
+**Status, 2026-05-25:** this research file is historical background. The Stage 2 implementation decision supersedes the original chowdsp/Jiles-Atherton plan: v1 uses an owned soft-clip + drive-coupled dynamic LPF design. The user-facing drive control is now **Burn** (formerly the Character macro). See `docs/decisions.md`.
+
 Read this end to end before implementing `Source/DSP/Saturation.cpp`.
 
 ## What the saturation needs to do
@@ -13,7 +15,7 @@ Functional requirements:
 1. **Asymmetric** — adds even harmonics dominantly, some odd. Symmetric saturation (pure tanh) is too clean and "digital."
 2. **Frequency-dependent** — high frequencies saturate slightly more than lows. Real tape has this; it's part of why tape sounds "smooth."
 3. **Dynamic / signal-dependent** — not a static waveshaper. Some hysteresis or memory so transients behave differently from sustained tones.
-4. **Subtle at low drive, characterful at high drive** — most usage is 10–30% drive on the Character macro. Has to *do something* at low settings or the macro feels dead. Has to not fall apart at high settings either.
+4. **Subtle at low drive, characterful at high drive** — most usage is 10–30% drive on the Burn macro. Has to *do something* at low settings or the macro feels dead. Has to not fall apart at high settings either.
 5. **Stereo coherent** — L and R saturate identically when fed identical signals (no false widening from independent processing).
 
 ## The candidate algorithms
@@ -93,7 +95,7 @@ Decision deferred until week 2 — needs A/B test on reference material. Agent s
 
 ### Q-SAT-2: Drive curve shape
 
-The Character macro maps `[0, 1]` to a drive value passed into the saturation. What curve?
+The Burn macro maps `[0, 1]` to a drive value passed into the saturation. What curve?
 
 - Linear: feels dead in the lower range, abrupt at the top
 - Exponential: feels lively at low values, can be unusable at the top
@@ -137,7 +139,7 @@ This isn't really a decision — it's a "don't forget." Agent must include the D
 
 ### Q-SAT-5: Bypass behaviour
 
-When Character macro = 0, what does saturation do?
+When Burn = 0, what does saturation do?
 
 - **True bypass:** signal passes through untouched, no DC blocker, no EQ
 - **Unity-saturation:** signal still passes through the model but at zero drive, DC blocker stays, gentle HF rolloff stays
