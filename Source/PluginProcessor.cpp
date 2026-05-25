@@ -5,6 +5,7 @@
 namespace {
 constexpr auto gainParameterId = "inputGain";
 constexpr auto tiltParameterId = "tiltDb";
+constexpr auto saturationDriveParameterId = "saturationDrive";
 } // namespace
 
 FlorescenceAudioProcessor::FlorescenceAudioProcessor()
@@ -15,6 +16,10 @@ FlorescenceAudioProcessor::FlorescenceAudioProcessor()
     auto tiltModule = std::make_unique<TiltEQ>();
     tiltEq = tiltModule.get();
     fxChain.push_back(std::move(tiltModule));
+
+    auto saturationModule = std::make_unique<Saturation>();
+    saturation = saturationModule.get();
+    fxChain.push_back(std::move(saturationModule));
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout
@@ -30,6 +35,12 @@ FlorescenceAudioProcessor::createParameterLayout() {
         juce::ParameterID{tiltParameterId, 1}, "Tilt",
         juce::NormalisableRange<float>{dspconfig::tiltEqMinDb, dspconfig::tiltEqMaxDb, 0.01f}, 0.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
+
+    layout.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{saturationDriveParameterId, 1}, "Saturation",
+        juce::NormalisableRange<float>{saturationconfig::driveMin, saturationconfig::driveMax,
+                                       0.001f},
+        0.0f));
 
     return {layout.begin(), layout.end()};
 }
@@ -107,10 +118,15 @@ void FlorescenceAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
 
     const auto gainDb = parameters.getRawParameterValue(gainParameterId)->load();
     const auto tiltDb = parameters.getRawParameterValue(tiltParameterId)->load();
+    const auto saturationDrive =
+        parameters.getRawParameterValue(saturationDriveParameterId)->load();
     const auto gain = juce::Decibels::decibelsToGain(gainDb);
 
     if (tiltEq != nullptr)
         tiltEq->setTiltDb(tiltDb);
+
+    if (saturation != nullptr)
+        saturation->setDrive(saturationDrive);
 
     buffer.applyGain(gain);
 

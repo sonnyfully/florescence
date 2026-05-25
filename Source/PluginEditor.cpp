@@ -1,8 +1,8 @@
 #include "PluginEditor.h"
 
 namespace {
-constexpr auto gainParameterId = "inputGain";
 constexpr auto tiltParameterId = "tiltDb";
+constexpr auto saturationDriveParameterId = "saturationDrive";
 
 void configureSlider(juce::Slider& slider) {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -18,19 +18,20 @@ void configureLabel(juce::Label& label, const juce::String& text) {
 FlorescenceAudioProcessorEditor::FlorescenceAudioProcessorEditor(
     FlorescenceAudioProcessor& ownerProcessor)
     : AudioProcessorEditor(&ownerProcessor), audioProcessor(ownerProcessor) {
-    configureSlider(gainSlider);
     configureSlider(tiltSlider);
-    configureLabel(gainLabel, "Gain");
+    configureSlider(saturationSlider);
     configureLabel(tiltLabel, "Tilt");
+    configureLabel(saturationLabel, "Saturation");
 
-    addAndMakeVisible(gainSlider);
     addAndMakeVisible(tiltSlider);
-    addAndMakeVisible(gainLabel);
+    addAndMakeVisible(saturationSlider);
     addAndMakeVisible(tiltLabel);
+    addAndMakeVisible(saturationLabel);
 
     auto& parameters = audioProcessor.getParameters();
-    gainAttachment = std::make_unique<SliderAttachment>(parameters, gainParameterId, gainSlider);
     tiltAttachment = std::make_unique<SliderAttachment>(parameters, tiltParameterId, tiltSlider);
+    saturationAttachment = std::make_unique<SliderAttachment>(
+        parameters, saturationDriveParameterId, saturationSlider);
 
     setSize(360, 220);
 }
@@ -50,8 +51,8 @@ void FlorescenceAudioProcessorEditor::resized() {
     auto left = bounds.removeFromLeft(bounds.getWidth() / 2).reduced(12);
     auto right = bounds.reduced(12);
 
-    gainLabel.setBounds(left.removeFromTop(24));
-    gainSlider.setBounds(left);
-    tiltLabel.setBounds(right.removeFromTop(24));
-    tiltSlider.setBounds(right);
+    tiltLabel.setBounds(left.removeFromTop(24));
+    tiltSlider.setBounds(left);
+    saturationLabel.setBounds(right.removeFromTop(24));
+    saturationSlider.setBounds(right);
 }

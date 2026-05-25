@@ -24,15 +24,8 @@ Format per question:
 
 ## Saturation module
 
-### Q-SAT-1: Oversampling factor (2x vs 4x vs variable)
-- Where it lives: `Source/DSP/Saturation.cpp`
-- Triggered when: First A/B test of saturation on reference material in week 2
-- Options:
-  - 2x: lower CPU, possible HF aliasing
-  - 4x: ~2x CPU, cleaner top end
-  - Variable: 2x at low drive, 4x at high drive
-- Default if pushed: 4x as compile-time constant, revisit
-- Owner decision needed by: End of week 2
+### ~~Q-SAT-1: Oversampling factor (2x vs 4x vs variable)~~ — RESOLVED 2026-05-25
+**Resolved → 4x, compile-time constant.** See `decisions.md` 2026-05-25.
 
 ### Q-SAT-2: Drive curve shape (Character macro → drive amount)
 - Where it lives: `Source/Params/MacroMapping.cpp`
@@ -41,28 +34,32 @@ Format per question:
 - Default if pushed: linear placeholder — **but flag explicitly**, this is almost certainly wrong as final
 - Owner decision needed by: Mid-week 6 (preset tuning)
 
-### Q-SAT-3: Hysteresis model parameter values (if using chowdsp tape model)
-- Where it lives: `Source/DSP/Saturation.cpp` (private constants)
-- Triggered when: Tuning pass during preset design, week 6
-- Options: chowdsp defaults, or hand-tuned values per A/B with reference tracks
-- Default if pushed: chowdsp defaults
-- Owner decision needed by: End of week 6
+### ~~Q-SAT-3: Hysteresis model parameter values~~ — N/A, ALGORITHM CHANGED 2026-05-25
+**No hysteresis model in v1.** Algorithm switched to soft-clip + dynamic LPF.
+See `decisions.md` 2026-05-25. May resurface if v1.x "Vintage" mode is built;
+in that case a new Q-SAT-3-V will be opened.
 
-### Q-SAT-4: Post-saturation EQ shaping (internal HF rolloff)
-- Where it lives: `Source/DSP/Saturation.cpp`
-- Triggered when: Implementing the module body in week 2
-- Options:
-  - A: pure saturation, no internal EQ
-  - B: small fixed HF rolloff (~-3dB at 8kHz) to fake tape head losses
-- Default if pushed: B (matches tape behaviour, makes stage feel complete in isolation)
-- Owner decision needed by: Week 2
+### ~~Q-SAT-4: Post-saturation EQ shaping (internal HF rolloff)~~ — RESOLVED 2026-05-25
+**Resolved → Option A, no static internal EQ.** Dynamic LPF is part of the
+saturation behaviour, not a separate stage. See `decisions.md` 2026-05-25.
 
-### Q-SAT-5: Bypass behaviour at Character = 0
-- Where it lives: `Source/DSP/Saturation.cpp`
-- Triggered when: Implementing the module body in week 2
-- Options: true bypass, unity-saturation (always-on with zero drive), crossfade
-- Default if pushed: unity-saturation with parameter smoothing
-- Owner decision needed by: Week 2
+### ~~Q-SAT-5: Bypass behaviour at Character = 0~~ — RESOLVED 2026-05-25
+**Resolved → unity behaviour, no separate bypass.** With the new architecture,
+drive=0 → tanh passes through and LPF cutoff sits at 20kHz, so the module is
+naturally transparent. See `decisions.md` 2026-05-25.
+
+### ~~Q-SAT-6: Soft-clip function~~ — RESOLVED 2026-05-25
+**Resolved → drive-normalised tanh.** Pre-warped/asymmetric variant flagged
+for week-6 listening but not the default. See `decisions.md` 2026-05-25.
+
+### ~~Q-SAT-7: Level detector type and time constants~~ — RESOLVED 2026-05-25
+**Resolved → peak detector, 10ms attack / 150ms release.** Time constants are
+starting values; revisit during preset tuning if behaviour feels wrong on
+real material. See `decisions.md` 2026-05-25.
+
+### ~~Q-SAT-8: LPF topology and cutoff range~~ — RESOLVED 2026-05-25
+**Resolved → SVF (TPT), Q=0.5, 20kHz → 6kHz exponential mapping.**
+See `decisions.md` 2026-05-25.
 
 ---
 
@@ -105,14 +102,27 @@ Q-IR-1 moved to `docs/decisions.md` on 2026-05-24. Licence terms must still be r
 
 ## Chorus module
 
+### Q-CHOR-1-LIC: Re-verify chowdsp BBD primitives licence before any use
+- Where it lives: `Source/DSP/Chorus.cpp` + `docs/decisions.md`
+- Triggered when: **Before Q-CHOR-1 is resolved**, and before any `chowdsp_utils` module is added as a dependency anywhere in the project.
+- Background: 2026-05-25 saturation algorithm swap was forced by the discovery that `chowdsp_utils` modules are GPLv3, incompatible with Florescence's closed-source commercial model. Q-CHOR-1's current default of "chowdsp BBD primitives" reproduces the same problem. **Default assumption: every chowdsp_utils module is GPLv3 unless verified otherwise.**
+- Options if chowdsp BBD is confirmed GPLv3:
+  - **Re-implement BBD from papers/blogs.** Well-documented technique (Reiss & McPherson book, various blog write-ups). Maybe 2–3 days of work.
+  - **Use Airwindows-flavoured BBD/chorus code.** MIT-licensed, explicitly cleared for commercial use. Different aesthetic from classic Juno but worth listening to.
+  - **Pure delay-line modulation, no BBD modelling.** Cheapest, generic-sounding. Acceptable as a v1 fallback if the chain composes well around it.
+  - **Obtain commercial chowdsp licence.** Only if BBD authenticity is critical and the other options sound clearly worse.
+- Default if pushed: **NO DEFAULT** — must be resolved before Q-CHOR-1.
+- Owner decision needed by: End of week 2 (so Q-CHOR-1 isn't blocked entering week 3)
+
 ### Q-CHOR-1: BBD model fidelity
 - Where it lives: `Source/DSP/Chorus.cpp`
 - Triggered when: Implementing in week 3
-- Options:
+- **Blocked by Q-CHOR-1-LIC.** Original options listed below stand or fall based on that resolution; rewrite this entry once Q-CHOR-1-LIC is closed.
+- Options (subject to licence verification):
   - Pure delay-line modulation (cheapest, sounds generic)
   - BBD-style with high-frequency loss + companding (more authentic, more code)
-  - chowdsp BBD primitives (good middle ground, MIT-licensed)
-- Default if pushed: chowdsp BBD primitives
+  - ~~chowdsp BBD primitives (good middle ground, MIT-licensed)~~ — **this default was wrong; chowdsp_utils is GPLv3, not MIT. See Q-CHOR-1-LIC.**
+- Default if pushed: **NO DEFAULT until Q-CHOR-1-LIC resolved.**
 - Owner decision needed by: Week 3
 
 ### Q-CHOR-2: Voice count
