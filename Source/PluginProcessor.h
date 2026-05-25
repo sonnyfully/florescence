@@ -4,6 +4,7 @@
 
 #include "DSP/Chorus.h"
 #include "DSP/FXModule.h"
+#include "DSP/Filter.h"
 #include "DSP/Saturation.h"
 #include "DSP/TiltEQ.h"
 
@@ -53,6 +54,7 @@ class FlorescenceAudioProcessor final : public juce::AudioProcessor {
     TiltEQ* tiltEq = nullptr;
     Saturation* saturation = nullptr;
     Chorus* chorus = nullptr;
+    Filter* filter = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FlorescenceAudioProcessor)
 };

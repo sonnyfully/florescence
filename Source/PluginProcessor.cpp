@@ -9,6 +9,9 @@ constexpr auto saturationDriveParameterId = "saturationDrive";
 constexpr auto chorusDepthParameterId = "chorusDepth";
 constexpr auto chorusRateParameterId = "chorusRate";
 constexpr auto chorusMixParameterId = "chorusMix";
+constexpr auto filterCutoffParameterId = "filterCutoff";
+constexpr auto filterResonanceParameterId = "filterResonance";
+constexpr auto filterEnvelopeDepthParameterId = "filterEnvelopeDepth";
 } // namespace
 
 FlorescenceAudioProcessor::FlorescenceAudioProcessor()
@@ -27,6 +30,10 @@ FlorescenceAudioProcessor::FlorescenceAudioProcessor()
     auto chorusModule = std::make_unique<Chorus>();
     chorus = chorusModule.get();
     fxChain.push_back(std::move(chorusModule));
+
+    auto filterModule = std::make_unique<Filter>();
+    filter = filterModule.get();
+    fxChain.push_back(std::move(filterModule));
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout
@@ -63,6 +70,25 @@ FlorescenceAudioProcessor::createParameterLayout() {
     layout.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{chorusMixParameterId, 1}, "Chorus Mix",
         juce::NormalisableRange<float>{chorusconfig::mixMin, chorusconfig::mixMax, 0.001f}, 0.0f));
+
+    layout.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{filterCutoffParameterId, 1}, "Filter Cutoff",
+        juce::NormalisableRange<float>{filterconfig::cutoffMinHz, filterconfig::cutoffMaxHz, 0.001f,
+                                       0.35f},
+        filterconfig::cutoffDefaultHz, juce::AudioParameterFloatAttributes().withLabel("Hz")));
+
+    layout.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{filterResonanceParameterId, 1}, "Filter Resonance",
+        juce::NormalisableRange<float>{filterconfig::resonanceMin, filterconfig::resonanceMax,
+                                       0.001f},
+        filterconfig::resonanceDefault));
+
+    layout.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{filterEnvelopeDepthParameterId, 1}, "Filter Env",
+        juce::NormalisableRange<float>{filterconfig::envelopeDepthMinOctaves,
+                                       filterconfig::envelopeDepthMaxOctaves, 0.001f},
+        filterconfig::envelopeDefaultDepthOctaves,
+        juce::AudioParameterFloatAttributes().withLabel("oct")));
 
     return {layout.begin(), layout.end()};
 }
@@ -145,6 +171,11 @@ void FlorescenceAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
     const auto chorusDepth = parameters.getRawParameterValue(chorusDepthParameterId)->load();
     const auto chorusRateHz = parameters.getRawParameterValue(chorusRateParameterId)->load();
     const auto chorusMix = parameters.getRawParameterValue(chorusMixParameterId)->load();
+    const auto filterCutoffHz = parameters.getRawParameterValue(filterCutoffParameterId)->load();
+    const auto filterResonance =
+        parameters.getRawParameterValue(filterResonanceParameterId)->load();
+    const auto filterEnvelopeDepth =
+        parameters.getRawParameterValue(filterEnvelopeDepthParameterId)->load();
     const auto gain = juce::Decibels::decibelsToGain(gainDb);
 
     if (tiltEq != nullptr)
@@ -157,6 +188,12 @@ void FlorescenceAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
         chorus->setDepth(chorusDepth);
         chorus->setRateHz(chorusRateHz);
         chorus->setMix(chorusMix);
+    }
+
+    if (filter != nullptr) {
+        filter->setCutoffHz(filterCutoffHz);
+        filter->setResonance(filterResonance);
+        filter->setEnvelopeDepthOctaves(filterEnvelopeDepth);
     }
 
     buffer.applyGain(gain);

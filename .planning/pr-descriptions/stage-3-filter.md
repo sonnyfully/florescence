@@ -2,7 +2,7 @@
 
 ## Status
 
-This PR is started to complete the remaining Stage 3 gap after Chorus merged. It is currently blocked at the required Filter stop points in `docs/open_questions.md`; no Filter DSP code should be written until Q-FILT-1 and Q-FILT-2 are explicitly resolved and moved to `docs/decisions.md`.
+This PR completes the remaining Stage 3 gap after Chorus merged. Q-FILT-1 and Q-FILT-2 are now resolved and moved to `docs/decisions.md`.
 
 ## Stage 3 gap
 
@@ -16,23 +16,25 @@ Stage 3 is not fully implemented yet:
 - Missing: chain integration after Chorus.
 - Missing: Stage 3 A/B pass for Tilt -> Saturation -> Chorus -> Filter.
 
-## Stop points surfaced
+## Stop points resolved
 
 ### Q-FILT-1: Filter topology
 
-- Where it lives: `Source/DSP/Filter.cpp`
-- Why it blocks: this determines the core filter implementation, test expectations, and how modulation behaves under resonance/cutoff sweeps.
-- Options: SVF (TPT), ladder (Moog-style), biquad.
-- Tentative lean: SVF (TPT), because `docs/ARCHITECTURE.md` already frames the Stage 3 filter as a gentle TPT state-variable low-pass and the project already uses JUCE TPT SVF successfully in Saturation.
+- Decision: TPT SVF low-pass only.
+- Implementation: `juce::dsp::StateVariableTPTFilter`, `StateVariableTPTFilterType::lowpass`.
+- Rejected: ladder, biquad, alternate filter modes, and ChowDSP/GPL filter modules.
 
 ### Q-FILT-2: Envelope follower scope
 
-- Where it lives: `Source/DSP/Filter.cpp`
-- Why it blocks: this determines whether the module needs only internal input-following DSP or host sidechain bus plumbing.
-- Options: input signal only, sidechain input, both switchable.
-- Tentative lean: input signal only for v1, sidechain deferred to v1.x, because the Stage 3 goal is the slow "duck" feel and the roadmap explicitly marks sidechain routing as out of scope for Stage 3.
+- Decision: input-following only for v1.
+- No sidechain bus, sidechain UI, or internal/sidechain mode toggle.
+- Follower tap: the signal entering `Filter`, downstream of Saturation in the fixed chain. In Stage 3 this is post-Saturation/post-Chorus audio, not raw plugin input.
 
-## Planned implementation after decisions
+## New open question
+
+Q-FILT-2-TUNING tracks Stage 6 by-ear tuning for the audition-baseline envelope attack/release/depth values.
+
+## Implementation
 
 - Add `FilterConfig.h` for named constants and references.
 - Implement `Filter` as an `FXModule`.
@@ -48,3 +50,13 @@ Stage 3 is not fully implemented yet:
 - `ctest --test-dir build-juce8 --output-on-failure`
 - Notebook plots for frequency response and envelope response.
 - A/B listening check on a sustained synth/pad or bus source after the implementation PR becomes audible.
+
+## Current testing
+
+- `cmake --build build-juce8 --target CharacterFX_Tests`
+- `cmake --build build-juce8 --target CharacterFX_All CharacterFX_Tests CharacterFX_PluginSmokeTests`
+- `ctest --test-dir build-juce8 --output-on-failure`
+
+Current result: 38/38 tests pass after adding `Tests/test_filter.cpp`, including the VST3 smoke test with Stage 3 filter parameters.
+
+Not yet completed in this environment: human standalone A/B on a sustained synth/pad source. The standalone target builds and exposes temporary Filter controls, but the final Stage 3 listening check still needs ears.

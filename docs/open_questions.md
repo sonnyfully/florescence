@@ -130,22 +130,25 @@ mode is parked in `v1.x_ideas.md`. See `decisions.md` 2026-05-25.
 
 ## Filter module
 
-### Q-FILT-1: Filter topology
-- Where it lives: `Source/DSP/Filter.cpp`
-- Triggered when: Implementing in week 3
-- Options: SVF (TPT), ladder (Moog-style), biquad
-- Default if pushed: SVF (TPT) — clean, stable, well-understood
-- Owner decision needed by: Week 3
+### ~~Q-FILT-1: Filter topology~~ — RESOLVED 2026-05-26
+**Resolved -> TPT SVF low-pass only.** Use
+`juce::dsp::StateVariableTPTFilter` with
+`StateVariableTPTFilterType::lowpass`. Ladder, biquad, and alternate filter
+types are out of scope for v1. See `decisions.md` 2026-05-26.
 
-### Q-FILT-2: Envelope follower scope
-- Where it lives: `Source/DSP/Filter.cpp`
-- Triggered when: Implementing
-- Options:
-  - Follow input signal (filter ducks under loud input)
-  - Follow sidechain input (true sidechain compression behaviour for filter cutoff)
-  - Both, switchable
-- Default if pushed: input signal only at v1, sidechain in v1.x
-- Owner decision needed by: Week 3
+### ~~Q-FILT-2: Envelope follower scope~~ — RESOLVED 2026-05-26
+**Resolved -> input-following only for v1.** No sidechain bus, sidechain UI,
+or sidechain mode toggle in v1. The follower listens to the signal entering the
+Filter stage, i.e. downstream of Saturation in the fixed chain. See
+`decisions.md` 2026-05-26.
+
+### Q-FILT-2-TUNING: Envelope follower attack/release/depth tuning
+- Where it lives: `Source/DSP/Filter.cpp` / `Source/DSP/FilterConfig.h`
+- Triggered when: Stage 6 preset tuning
+- Audition baseline: attack 10ms, release 150ms, depth 0.5
+- Decision: by-ear during Stage 6 with the full chain audible. Values may differ per Character mode if a later CharacterPreset design makes that worthwhile.
+- Default if pushed: keep baselines as ship values
+- Owner decision needed by: Mid-Stage 6
 
 ---
 
@@ -218,6 +221,35 @@ mode is parked in `v1.x_ideas.md`. See `decisions.md` 2026-05-25.
 - Default if pushed: Burn affects saturation parameters only; chorus depth lives under Pulse
 - Owner decision needed by: Week 5
 
+
+### Q-MAC-DECOMP: Macro decomposition table
+- Where it lives: docs/decisions.md (as a deliverable table) + Source/Params/MacroMapping.cpp
+- Triggered when: Stage 5, before any macro mapping code is written
+- The question: which internal DSP parameters does each macro touch, with what range and curve? This is the "half the product" table — taste-encoded as code.
+- Required output: an explicit table in docs/decisions.md, format like:
+
+    Atmosphere (0-1) →
+      ConvReverb.wetMix:    [0.0 → 0.85, curve X]
+      ConvReverb.preDelay:  [0 → 60ms, linear]
+      Delay.wetMix:         [0.0 → 0.40, curve Y]
+      ...
+
+    Burn (0-1) →
+      Saturation.drive:     [0.0 → 1.0, curve per Q-SAT-2]
+      TiltEQ.amount:        [-2 → +4 dB, linear]
+      Filter.cutoff offset: [0 → -8kHz at high values]
+      ...
+
+    Pulse (0-1) →
+      Chorus.rate:          [0.2 → 2.0 Hz, curve Z]
+      Chorus.depth:         [0 → 1.0, curve W]
+      Filter.envDepth:      [0 → 0.6]
+      ...
+
+- Constraint: each internal parameter touched by at most one macro (per Q-MAC-2). Day/Night and Character mode apply *on top of* macro values, not as part of the macro decomposition.
+- Default if pushed: NO DEFAULT — every cell of this table is a taste call. Agent must NOT silently fill it with linear placeholders without explicit human review.
+- Owner decision needed by: Mid-Stage 5, before macro mapping merges to main.
+- Related: Q-MAC-1 (philosophy), Q-MAC-2 (overlap), Q-MAC-3 (Atmosphere curve), Q-MAC-4 (Burn → chorus depth), Q-SAT-2 (Burn drive curve).
 ---
 
 ## Character switch
@@ -240,6 +272,18 @@ mode is parked in `v1.x_ideas.md`. See `decisions.md` 2026-05-25.
   - All IRs are available in all modes; each mode biases the default selection
 - Default if pushed: all IRs available in all modes, with Character mode biasing the default selection
 - Owner decision needed by: Week 4
+
+### Q-CHAR-3: CharacterPreset state shape
+- Where it lives: Source/Params/CharacterPreset.{h,cpp} (to be created in Stage 5)
+- Triggered when: Stage 5, before MacroMapping wiring
+- The question: what does a CharacterPreset (Velvet / Onyx / Chrome) actually represent in code?
+- Options:
+  A. Lightweight — a set of *curve modifiers* on the shared macro decomposition table. Same parameter targets across all modes; modes shift the curves. Smallest data, easiest reasoning.
+  B. Medium — curve modifiers + per-mode IR selection bias for ConvReverb. Same DSP topology, different IRs.
+  C. Heavyweight — independent parameter maps per mode. Different parameter targets, different IRs, different filter defaults. Most flexibility, hardest to reason about and tune.
+- Default if pushed: A (lightweight) — keeps the system reasonable to tune in Stage 6 and easy to extend later.
+- Owner decision needed by: Start of Stage 5.
+- Related: Q-CHAR-1 (switching behaviour), Q-CHAR-2 (reverb IR set per mode), Q-MAC-DECOMP.
 
 ---
 
@@ -331,6 +375,19 @@ mode is parked in `v1.x_ideas.md`. See `decisions.md` 2026-05-25.
   - Hidden by default, with an option to reveal
 - Default if pushed: visible by default
 - Owner decision needed by: Week 5
+
+### Q-GUI-5: Day/Night semantic behaviour
+- Where it lives: across Source/Params/MacroMapping.cpp, Source/DSP/ConvReverb.cpp, Source/DSP/Filter.cpp, Source/DSP/Saturation.cpp
+- Triggered when: Stage 5 macro mapping work, before front-panel Day/Night toggle is wired
+- The question: what does Day/Night actually *do* internally? It's named on the front panel but the semantic isn't defined.
+- Options:
+  A. Global brightness scaler — touches filter cutoff offset and ConvReverb HF damping. Simple, additive on top of macros.
+  B. Different IR set per mode — Day = brighter halls/rooms, Night = darker plates/spaces. Bigger character difference, larger ResourceIRs footprint.
+  C. Meta-curve on Atmosphere — same IRs, but Atmosphere maps to wetter/longer tails at Night, drier/shorter at Day.
+  D. Hybrid — small global brightness shift + slightly different IR selection bias.
+- Default if pushed: NO DEFAULT — defines what the front panel toggle means, must be a taste call.
+- Owner decision needed by: Start of Stage 5.
+- Related: Q-GUI-4 (default visibility), Q-CHAR-3 (interaction with Character mode), Q-IR-2 (IR library size if Option B).
 
 ---
 

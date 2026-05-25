@@ -461,3 +461,63 @@ catastrophic cancellation; exact mono tone is a Stage 6 listening question.
 - `Source/DSP/ChorusConfig.h`
 - `Tests/test_chorus.cpp`
 - `docs/research/chorus.md`
+
+## 2026-05-26 — Stage 3 Filter decisions
+
+Resolved from `docs/open_questions.md`: Q-FILT-1 and Q-FILT-2.
+
+### Q-FILT-1 — Filter topology: **TPT SVF low-pass**
+
+Decision: implement the v1 Filter module with `juce::dsp::StateVariableTPTFilter`
+using `juce::dsp::StateVariableTPTFilterType::lowpass`.
+
+Rationale:
+
+- The envelope follower modulates cutoff, so stable behaviour under modulation
+  matters more than extra filter colour.
+- TPT / zero-delay-feedback SVF is a modern, stable topology for this use case
+  and JUCE provides a permissively usable implementation.
+- The aesthetic does not need a ladder, Sallen-Key, or ARP-flavoured filter.
+  Character lives primarily in Saturation, Chorus, Delay, and Reverb.
+
+Rejected:
+
+- Ladder / Moog-style topology: unnecessary colour and complexity for v1.
+- Biquad: less appealing under fast cutoff modulation.
+- Additional HP/BP/notch modes: scope creep; v1 filter is low-pass only.
+- ChowDSP / Werner / ARP / fractional-order filters: GPL/licence risk and
+  overkill for the gentle v1 low-pass role.
+
+### Q-FILT-2 — Envelope follower scope: **input-following only for v1**
+
+Decision: the v1 Filter envelope follower listens to the signal entering the
+Filter stage in the fixed chain. No sidechain bus, sidechain routing, or
+sidechain/internal toggle is added for v1.
+
+Rationale:
+
+- Sidechain routing is non-trivial host and UI scope across Ableton, Logic,
+  Cubase, and other DAWs.
+- A sidechain mode would add conceptual clutter to the intentionally minimal
+  v1 control surface.
+- The desired aesthetic is source-dynamics-driven movement: the filter ducks
+  under the chain's own loud passages and opens through quieter/sustained
+  material.
+- True sidechain filtering is better parked for v1.x / pro-mode exploration.
+
+Implementation note:
+
+- The follower must not listen to the raw pre-chain input. It listens downstream
+  of Saturation in the fixed chain. In the current Stage 3 chain this means the
+  signal entering `Filter`, after Saturation and Chorus.
+- Audition baselines for the first implementation: attack 10ms, release 150ms,
+  envelope depth 0.5. These are not final taste values; Q-FILT-2-TUNING tracks
+  Stage 6 listening review.
+
+Affected files:
+
+- `docs/open_questions.md`
+- `Source/DSP/Filter.{h,cpp}`
+- `Source/DSP/FilterConfig.h`
+- `Tests/test_filter.cpp`
+- `notebooks/filter_response.ipynb`
