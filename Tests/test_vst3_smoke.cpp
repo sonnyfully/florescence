@@ -2,7 +2,7 @@
 
 #include <juce_audio_processors_headless/juce_audio_processors_headless.h>
 
-TEST_CASE("built VST3 loads and exposes stage 2 tilt parameters") {
+TEST_CASE("built VST3 loads and exposes stage 2 DSP parameters") {
     juce::VST3PluginFormatHeadless format;
     juce::OwnedArray<juce::PluginDescription> descriptions;
 
@@ -33,4 +33,5 @@ TEST_CASE("built VST3 loads and exposes stage 2 tilt parameters") {
 
     REQUIRE(parameterNames.contains("Gain"));
     REQUIRE(parameterNames.contains("Tilt"));
+    REQUIRE(parameterNames.contains("Saturation"));
 }

@@ -100,12 +100,12 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 **End state:**
 - `FXModule` interface defined in `Source/DSP/FXModule.h` per `ARCHITECTURE.md`.
 - `TiltEQ` module: stereo, tilt parameter -12dB to +12dB at pivot ~1kHz, unit-tested for frequency response.
-- `Saturation` module: chowdsp `ChowTapeModel` wrapped, drive parameter 0–1, oversampled (factor per Q-SAT-1), DC blocker, optional internal HF rolloff per Q-SAT-4, bypass behaviour per Q-SAT-5.
+- `Saturation` module: owned soft-clip + drive-coupled dynamic LPF per 2026-05-25 decision, drive parameter 0–1, 4x oversampled per Q-SAT-1, DC blocker, no static internal HF rolloff per Q-SAT-4, unity behaviour per Q-SAT-5.
 - Both modules plug into a minimal chain in `PluginProcessor::processBlock`.
 - Plugin's two front-panel knobs (still ugly GUI) are mapped to Tilt amount and Saturation drive — direct mapping, no Macro layer yet.
 - A/B test conducted on at least 3 reference tracks (vocal, synth, drum loop) — saturation character feels right or open question raised.
 - Unit tests in `Tests/test_tilteq.cpp` and `Tests/test_saturation.cpp` pass.
-- chowdsp_utils added as CMake dependency with explicit `decisions.md` entry.
+- GPL chowdsp/CHOW Tape dependency explicitly rejected in `decisions.md`; no new CMake dependency for saturation.
 
 **Stop points to resolve in this stage:**
 - Q-SAT-1 (oversampling factor) — A/B at week 2 end
@@ -114,7 +114,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 
 **Stop points deferred (to surface but not yet resolve):**
 - Q-SAT-2 (drive curve shape) — implement linear placeholder, surface that it needs revisit in stage 6
-- Q-SAT-3 (hysteresis param tuning) — use chowdsp defaults, surface for stage 6 tuning pass
+- Q-SAT-3 (hysteresis param tuning) — resolved N/A after algorithm change; v1.x vintage mode would open a new question
 
 **Deliverables:**
 - `Source/DSP/FXModule.h`
@@ -123,7 +123,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - `Tests/test_tilteq.cpp`, `Tests/test_saturation.cpp`
 - One Jupyter notebook plotting saturation curves and harmonic spectrum
 - Two PRs: `feature/tilt-eq`, `feature/saturation`
-- `docs/decisions.md` entries for chowdsp dependency, Q-SAT-1, Q-SAT-4, Q-SAT-5
+- `docs/decisions.md` entries for the GPL dependency rejection, algorithm change, Q-SAT-1, Q-SAT-3, Q-SAT-4, Q-SAT-5, Q-SAT-6, Q-SAT-7, and Q-SAT-8
 
 **Not in scope:**
 - Chorus, Filter, Delay, Reverb (later stages)
@@ -133,9 +133,9 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - Multi-band saturation (not in v1 scope at all)
 
 **Risks:**
-- *Saturation doesn't sound right with chowdsp defaults* — expected at this stage; the tuning pass is stage 6. What needs to be true at end of stage 2 is "the character is in the right neighbourhood." If it's clearly wrong (e.g., sounds like a guitar pedal), surface immediately rather than pushing through.
+- *Saturation doesn't sound right with the owned soft-clip + dynamic LPF design* — expected to need tuning in stage 6. What needs to be true at end of stage 2 is "the character is in the right neighbourhood." If it's clearly wrong (e.g., sounds like a guitar pedal), surface immediately rather than pushing through.
 - *Oversampling latency* — JUCE oversampling has latency in some modes. Target zero-latency mode, confirm `getLatencySamples()` returns 0.
-- *chowdsp build issues* — header-only modules vs static-library modules in JUCE CMake. Document the integration pattern in `decisions.md` so it's not re-discovered later.
+- *Third-party DSP licensing issues* — surfaced by saturation and now tracked for chorus as Q-CHOR-1-LIC. Do not add chowdsp modules unless their licence is resolved first.
 
 ---
 
@@ -397,7 +397,7 @@ Stage status in this file (update as work progresses):
 
 - Stage 0 — Pre-flight — **IN PROGRESS** (2026-05-24)
 - Stage 1 — Plumbing — **DONE ON BRANCH** (2026-05-24, verified locally; merge blocked by Stage 0 external deliverables)
-- Stage 2 — Tilt EQ + Saturation — NOT STARTED
+- Stage 2 — Tilt EQ + Saturation — **DONE** (2026-05-25, implementation verified and human A/B listening test passed)
 - Stage 3 — Chorus + Filter — NOT STARTED
 - Stage 4 — Delay + ConvReverb — NOT STARTED
 - Stage 5 — Macros + GUI v1 — NOT STARTED

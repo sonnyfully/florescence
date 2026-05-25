@@ -1,5 +1,7 @@
 add_executable(CharacterFX_Tests
     test_tilteq.cpp
+    test_saturation.cpp
+    ../Source/DSP/Saturation.cpp
     ../Source/DSP/TiltEQ.cpp)
 
 target_include_directories(CharacterFX_Tests

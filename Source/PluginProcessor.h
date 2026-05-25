@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include "DSP/FXModule.h"
+#include "DSP/Saturation.h"
 #include "DSP/TiltEQ.h"
 
 #include <memory>
@@ -49,6 +50,7 @@ class FlorescenceAudioProcessor final : public juce::AudioProcessor {
     juce::AudioProcessorValueTreeState parameters;
     std::vector<std::unique_ptr<FXModule>> fxChain;
     TiltEQ* tiltEq = nullptr;
+    Saturation* saturation = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FlorescenceAudioProcessor)
 };

@@ -50,6 +50,7 @@ if(CHARACTERFX_BUILD_PLUGIN)
     target_sources(CharacterFX
         PRIVATE
             Source/DSP/TiltEQ.cpp
+            Source/DSP/Saturation.cpp
             Source/PluginEditor.cpp
             Source/PluginProcessor.cpp)
 
