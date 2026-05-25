@@ -268,7 +268,7 @@ Character switch modes:
 
 - **Velvet** — soft, seductive, warm. Kissland / After Hours register. Gentler asymmetric saturation, warm upper-mid emphasis, warm plates/chambers, slower deeper chorus, gentle filtering.
 - **Onyx** — cold, hard, menacing. Gesaffelstein / industrial register. Harder saturation, upper-mid bite, concrete/metallic/dark spaces, tighter mechanical chorus, more aggressive filter resonance options.
-- **Chrome** — clean, polished, futurist. Dawn FM / Blade Runner 2049 register. Cleanest saturation from the Stage 2 soft-clip + dynamic LPF baseline, clean halls/bright chambers, lush glossy chorus, neutral controlled filtering.
+- **Chrome** — clean, polished, futurist. Dawn FM / Blade Runner 2049 register. Cleanest saturation from the Stage 2 clean-room Jiles-Atherton baseline, clean halls/bright chambers, lush glossy chorus, neutral controlled filtering.
 
 Explicitly cut from v1:
 
@@ -306,3 +306,84 @@ Do not execute these in this docs PR:
 3. `feature: implement Character switch and CharacterPreset data structure` — add the discrete mode selector and its parameter snapshots.
 4. `feature: implement Day/Night brightness stage and visibility setting` — add final brightness shelf behaviour and the secondary-panel hide/reveal setting after Q-GUI-4.
 5. `feature: revise preset schema and categories` — move from source-typed categories to the themed preset split after Q-PRE-1-REVISED and Q-PRE-2-REVISED are resolved.
+
+## 2026-05-25 — Saturation: clean-room Jiles-Atherton replaces tanh shaper
+
+### Decision
+
+Replace the Stage 2 symmetric tanh shaper with a clean-room Jiles-Atherton tape
+hysteresis model implemented from papers:
+
+- D. C. Jiles and D. L. Atherton, "Theory of ferromagnetic hysteresis",
+  *Journal of Magnetism and Magnetic Materials*, 61, 48-60, 1986.
+- Jatin Chowdhury, "Real-time Physical Modelling for Analog Tape Machines",
+  Proc. DAFx 2019.
+
+Do not consult, copy, or link `chowdsp_waveshapers`, AnalogTapeModel, CHOW Tape,
+or any other GPL implementation. The algorithm comes from the published math,
+not source code.
+
+### Rationale
+
+The tanh + dynamic LPF path was legally clean, but it was memoryless and
+odd-harmonic dominant. The product direction now prioritizes tape-like
+history-dependent saturation with stronger even harmonics and different
+transient/sustain behavior. A clean-room Jiles-Atherton model has a higher
+aesthetic ceiling for Florescence's Burn axis than a polynomial or static
+waveshaper fallback.
+
+### Implementation
+
+- New pure-math module: `Source/DSP/JilesAtherton.{h,cpp}`.
+- `Saturation` keeps the public `FXModule` interface.
+- 4x oversampling stays.
+- DC blocker stays after the nonlinear model.
+- The drive-coupled dynamic LPF stays because tape loses high-frequency energy
+  as it is driven harder; the hysteresis model and HF-loss behavior are
+  complementary.
+- A fixed 8 kHz post-saturator rolloff is added to keep the tape path from
+  becoming fizzy before the level-dependent HF loss engages.
+- Drive remains a 0-1 input gain/push before the hysteresis stage. Q-SAT-2
+  remains open for Stage 6 Burn curve tuning.
+
+Starting model constants:
+
+- `M_s = 1.0`
+- `k = 0.47`
+- `a = 22000`
+- `alpha = 1.6e-3`
+- `c = 1.7e-1`
+
+Normalized-audio constants `inputFieldScale`, `maxDriveGain`, and
+`recordAsymmetry` are implementation tuning values because the papers model
+magnetic field strength, not DAW-normalized audio. They must be revisited in
+Stage 6 listening.
+
+### Verification
+
+Automated tests cover determinism, silence, DC blocking, stereo coherence,
+smooth drive ramps, hysteresis loop behavior, even-harmonic emphasis, HF-loss
+behavior, and stability at 44.1, 48, 96, and 192 kHz.
+
+Evidence plots:
+
+- `docs/research/saturation/hysteresis_loop.png`
+- `docs/research/saturation/harmonic_content.png`
+
+### Risk
+
+The RK4 core is substantially heavier than the previous tanh shaper. A
+temporary optimized micro-benchmark measured the core around 16x the old tanh
+core, although the absolute cost for one stereo instance was still small. This
+requires full Release-plugin profiling before beta. If the full module is too
+expensive, the next decision should be explicit: optimize the solver, accept
+the cost, or choose the asymmetric-polynomial fallback.
+
+### Affected files
+
+- `Source/DSP/JilesAtherton.{h,cpp}`
+- `Source/DSP/Saturation.{h,cpp}`
+- `Source/DSP/SaturationConfig.h`
+- `Tests/test_jiles_atherton.cpp`
+- `Tests/test_saturation.cpp`
+- `docs/research/saturation.md`

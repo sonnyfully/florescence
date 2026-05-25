@@ -34,23 +34,26 @@ Format per question:
 - Default if pushed: linear placeholder — **but flag explicitly**, this is almost certainly wrong as final
 - Owner decision needed by: Mid-week 6 (preset tuning)
 
-### ~~Q-SAT-3: Hysteresis model parameter values~~ — N/A, ALGORITHM CHANGED 2026-05-25
-**No hysteresis model in v1.** Algorithm switched to soft-clip + dynamic LPF.
-See `decisions.md` 2026-05-25. May resurface if v1.x "Vintage" mode is built;
-in that case a new Q-SAT-3-V will be opened.
+### ~~Q-SAT-3: Hysteresis model parameter values~~ — RESOLVED 2026-05-25, REVISED 2026-05-25
+**Resolved → clean-room Jiles-Atherton starting values from Chowdhury DAFx 2019:**
+`M_s=1.0`, `k=0.47`, `a=22000`, `alpha=1.6e-3`, `c=1.7e-1`.
+Normalized-audio constants (`inputFieldScale`, `maxDriveGain`, `recordAsymmetry`) are
+implementation tuning values. See `decisions.md` 2026-05-25 clean-room saturation entry.
 
-### ~~Q-SAT-4: Post-saturation EQ shaping (internal HF rolloff)~~ — RESOLVED 2026-05-25
-**Resolved → Option A, no static internal EQ.** Dynamic LPF is part of the
-saturation behaviour, not a separate stage. See `decisions.md` 2026-05-25.
+### ~~Q-SAT-4: Post-saturation EQ shaping (internal HF rolloff)~~ — RESOLVED 2026-05-25, REVISED 2026-05-25
+**Resolved → drive-coupled dynamic LPF plus fixed 8kHz post-saturator rolloff.**
+The dynamic LPF models level-dependent tape HF loss; the fixed rolloff prevents fizz before
+downstream modules. See `decisions.md` 2026-05-25 clean-room saturation entry.
 
 ### ~~Q-SAT-5: Bypass behaviour at Character = 0~~ — RESOLVED 2026-05-25
-**Resolved → unity behaviour, no separate bypass.** With the new architecture,
-drive=0 → tanh passes through and LPF cutoff sits at 20kHz, so the module is
-naturally transparent. See `decisions.md` 2026-05-25.
+**Resolved → unity behaviour, no separate bypass.** With drive=0, the Jiles-Atherton
+model path returns input unchanged and the module skips the saturation/filter path, so
+automation into saturation is smooth while zero drive remains transparent. See `decisions.md`
+2026-05-25 clean-room saturation entry.
 
-### ~~Q-SAT-6: Soft-clip function~~ — RESOLVED 2026-05-25
-**Resolved → drive-normalised tanh.** Pre-warped/asymmetric variant flagged
-for week-6 listening but not the default. See `decisions.md` 2026-05-25.
+### ~~Q-SAT-6: Soft-clip function~~ — SUPERSEDED 2026-05-25
+**Superseded by clean-room Jiles-Atherton hysteresis.** No tanh soft-clipper in the
+Stage 2 saturation path. See `decisions.md` 2026-05-25 clean-room saturation entry.
 
 ### ~~Q-SAT-7: Level detector type and time constants~~ — RESOLVED 2026-05-25
 **Resolved → peak detector, 10ms attack / 150ms release.** Time constants are

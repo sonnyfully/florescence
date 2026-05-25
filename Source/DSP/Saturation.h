@@ -1,6 +1,7 @@
 #pragma once
 
 #include "FXModule.h"
+#include "JilesAtherton.h"
 #include "SaturationConfig.h"
 
 #include <memory>
@@ -20,7 +21,6 @@ class Saturation final : public FXModule {
         return targetDrive;
     }
 
-    [[nodiscard]] static float shapeSample(float input, float drive) noexcept;
     [[nodiscard]] static float getDynamicCutoffHz(float driveAmount) noexcept;
 
   private:
@@ -44,7 +44,9 @@ class Saturation final : public FXModule {
     float releaseCoefficient = 0.0f;
     float dcBlockerCoefficient = 0.0f;
     std::vector<ChannelState> channels;
+    std::vector<JilesAtherton> tapeModels;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedDrive;
     juce::dsp::StateVariableTPTFilter<float> dynamicLowPass;
+    juce::dsp::StateVariableTPTFilter<float> fixedHighFrequencyRolloff;
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler;
 };
