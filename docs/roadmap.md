@@ -22,7 +22,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 The codebase is ahead of some old roadmap gates, while a few external product-readiness items are still open. Treat this file as the current source of truth:
 
 - Stage 1 plumbing is merged to `main`.
-- Stage 2 Tilt EQ + Saturation code exists and is wired into the minimal chain. `ctest --test-dir build-juce8 --output-on-failure` passes 13/13 locally, including the VST3 smoke test. The older `build/` directory is stale/misconfigured and finds no tests.
+- Stage 2 Tilt EQ + Saturation code exists and is wired into the minimal chain. The saturation stage has been refactored to a clean-room Jiles-Atherton implementation; `ctest --test-dir build-juce8 --output-on-failure` passes 19/19 locally, including the VST3 smoke test. The older `build/` directory is stale/misconfigured and finds no tests.
 - Stage 3 is currently the `docs/revamp-north-star-alignment` docs branch. Chorus and Filter C++ work has **not** started.
 - Stage 0's unresolved non-code items no longer block Stage 3 engineering, but they are still product-readiness gates with due-by milestones below.
 - `README.md` is known stale about branch/stage status. Do not treat it as authoritative until a separate docs cleanup updates it.
@@ -98,7 +98,7 @@ The codebase is ahead of some old roadmap gates, while a few external product-re
 - Any DSP from the v1 chain (no saturation, no chorus, etc.)
 - Code signing — Apple Dev account not enrolled yet
 - Preset system — comes in stage 6
-- chowdsp_utils integration — comes in stage 2 when first needed
+- chowdsp_utils integration — no v1 DSP module may use GPL chowdsp modules; prefer JUCE or clean-room paper implementations
 
 **Risks:**
 - *CMake fights JUCE* — budget a day for this. Jules Storer's JUCE CMake examples on GitHub are the reference; copy structure rather than improvise.
@@ -111,12 +111,12 @@ The codebase is ahead of some old roadmap gates, while a few external product-re
 
 **Goal:** First two real DSP modules in the chain, audibly working on real audio. Saturation is the aesthetic anchor — if it doesn't sound right, nothing downstream saves it.
 
-**Current status:** Done on 2026-05-25. `TiltEQ`, `Saturation`, `FXModule`, deterministic Catch2 tests, and the minimal chain are present. Stage 2 still leaves Q-SAT-2 open for the Stage 6 Burn curve tuning pass.
+**Current status:** Done on 2026-05-25. `TiltEQ`, clean-room Jiles-Atherton `Saturation`, `FXModule`, deterministic Catch2 tests, verification plots, and the minimal chain are present. Stage 2 still leaves Q-SAT-2 open for the Stage 6 Burn curve tuning pass.
 
 **End state:**
 - `FXModule` interface defined in `Source/DSP/FXModule.h` per `ARCHITECTURE.md`.
 - `TiltEQ` module: stereo, tilt parameter -12dB to +12dB at pivot ~1kHz, unit-tested for frequency response.
-- `Saturation` module: owned soft-clip + drive-coupled dynamic LPF per 2026-05-25 decision, drive parameter 0–1, 4x oversampled per Q-SAT-1, DC blocker, no static internal HF rolloff per Q-SAT-4, unity behaviour per Q-SAT-5.
+- `Saturation` module: clean-room Jiles-Atherton hysteresis per the 2026-05-25 decision, drive parameter 0–1, 4x oversampled per Q-SAT-1, DC blocker, drive-coupled dynamic LPF plus fixed 8kHz post-saturator rolloff per the revised Q-SAT-4 history, unity behaviour per Q-SAT-5.
 - Both modules plug into a minimal chain in `PluginProcessor::processBlock`.
 - Plugin's two front-panel knobs (still ugly GUI) are mapped to Tilt amount and Saturation drive — direct mapping, no Macro layer yet.
 - A/B listening check conducted on representative source material (vocal, synth, drum loop) — saturation character feels right or open question raised. The formal 5-track reference list is still due before Stage 6.
@@ -125,21 +125,21 @@ The codebase is ahead of some old roadmap gates, while a few external product-re
 
 **Stop points resolved in this stage:**
 - Q-SAT-1 (oversampling factor) — resolved 2026-05-25
-- Q-SAT-4 (internal HF rolloff yes/no) — resolved 2026-05-25
+- Q-SAT-4 (internal HF rolloff yes/no) — resolved 2026-05-25, revised to include fixed 8kHz rolloff plus drive-coupled HF loss
 - Q-SAT-5 (bypass behaviour at drive/Burn = 0) — resolved 2026-05-25
 
 **Stop points deferred (to surface but not yet resolve):**
 - Q-SAT-2 (Burn macro drive curve shape) — linear placeholder is acceptable before Stage 6, but not final without human listening review
-- Q-SAT-3 (hysteresis param tuning) — resolved N/A after algorithm change; v1.x vintage mode would open a new question
+- Q-SAT-3 (hysteresis param tuning) — reopened by the clean-room Jiles-Atherton decision; fixed starting values are implemented, with listening/tuning deferred to Stage 6
 
 **Deliverables:**
 - `Source/DSP/FXModule.h`
 - `Source/DSP/TiltEQ.{cpp,h}`
 - `Source/DSP/Saturation.{cpp,h}`
-- `Tests/test_tilteq.cpp`, `Tests/test_saturation.cpp`
-- One Jupyter notebook plotting saturation curves and harmonic spectrum
+- `Tests/test_tilteq.cpp`, `Tests/test_jiles_atherton.cpp`, `Tests/test_saturation.cpp`
+- Verification plots in `docs/research/saturation/`
 - Two PRs: `feature/tilt-eq`, `feature/saturation`
-- `docs/decisions.md` entries for the GPL dependency rejection, algorithm change, Q-SAT-1, Q-SAT-3, Q-SAT-4, Q-SAT-5, Q-SAT-6, Q-SAT-7, and Q-SAT-8
+- `docs/decisions.md` entries for the GPL dependency rejection, clean-room Jiles-Atherton path, Q-SAT-1, Q-SAT-3, Q-SAT-4, Q-SAT-5, Q-SAT-6, Q-SAT-7, and Q-SAT-8
 
 **Not in scope:**
 - Chorus, Filter, Delay, Reverb (later stages)
@@ -149,7 +149,7 @@ The codebase is ahead of some old roadmap gates, while a few external product-re
 - Multi-band saturation (not in v1 scope at all)
 
 **Risks:**
-- *Saturation doesn't sound right with the owned soft-clip + dynamic LPF design* — expected to need tuning in stage 6. What needs to be true at end of stage 2 is "the character is in the right neighbourhood." If it's clearly wrong (e.g., sounds like a guitar pedal), surface immediately rather than pushing through.
+- *Saturation CPU or tone misses the v1 bar* — the clean-room Jiles-Atherton path has a higher aesthetic ceiling but a heavier RK4 core. Full Release-plugin profiling and Stage 6 listening decide whether to keep it, optimize it, or explicitly choose the asymmetric-polynomial fallback.
 - *Oversampling latency* — JUCE oversampling has latency in some modes. Target zero-latency mode, confirm `getLatencySamples()` returns 0.
 - *Third-party DSP licensing issues* — surfaced by saturation and now tracked for chorus as Q-CHOR-1-LIC. Do not add chowdsp modules unless their licence is resolved first.
 

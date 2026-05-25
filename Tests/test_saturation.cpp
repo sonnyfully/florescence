@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <complex>
 #include <vector>
 
 namespace {
@@ -54,14 +55,23 @@ float getPeakDifference(const juce::AudioBuffer<float>& a, const juce::AudioBuff
 
     return peak;
 }
-} // namespace
 
-TEST_CASE("Saturation tanh shaper is transparent at zero drive") {
-    REQUIRE_THAT(Saturation::shapeSample(0.75f, 0.0f),
-                 Catch::Matchers::WithinAbs(0.75f, 0.000001f));
-    REQUIRE_THAT(Saturation::shapeSample(-0.5f, 0.0f),
-                 Catch::Matchers::WithinAbs(-0.5f, 0.000001f));
+float getDftMagnitude(const juce::AudioBuffer<float>& buffer, const int harmonic,
+                      const float fundamentalHz) {
+    std::complex<double> sum{0.0, 0.0};
+    const auto frequency = fundamentalHz * static_cast<float>(harmonic);
+    const auto samples = buffer.getNumSamples();
+
+    for (auto sample = 0; sample < samples; ++sample) {
+        const auto phase = -juce::MathConstants<double>::twoPi * frequency *
+                           static_cast<double>(sample) / sampleRate;
+        const auto value = static_cast<double>(buffer.getSample(0, sample));
+        sum += value * std::complex<double>{std::cos(phase), std::sin(phase)};
+    }
+
+    return static_cast<float>(std::abs(sum) / static_cast<double>(samples));
 }
+} // namespace
 
 TEST_CASE("Saturation dynamic cutoff follows the exponential range") {
     REQUIRE_THAT(Saturation::getDynamicCutoffHz(0.0f),
@@ -173,6 +183,58 @@ TEST_CASE("Saturation preserves stereo coherence for identical input") {
     for (auto sample = 0; sample < buffer.getNumSamples(); ++sample)
         REQUIRE_THAT(buffer.getSample(0, sample),
                      Catch::Matchers::WithinAbs(buffer.getSample(1, sample), 0.000001f));
+}
+
+TEST_CASE("Saturation parameter ramps remain smooth") {
+    Saturation saturation;
+    saturation.prepare({sampleRate, 1, channelCount});
+
+    auto previous = 0.0f;
+    auto largestDelta = 0.0f;
+
+    for (auto sample = 0; sample < 4096; ++sample) {
+        const auto drive = static_cast<float>(sample) / 4095.0f;
+        saturation.setDrive(drive);
+
+        juce::AudioBuffer<float> buffer(static_cast<int>(channelCount), 1);
+        const auto input =
+            0.65f * std::sin(juce::MathConstants<float>::twoPi * 80.0f *
+                             static_cast<float>(sample) / static_cast<float>(sampleRate));
+        buffer.setSample(0, 0, input);
+        buffer.setSample(1, 0, input);
+
+        auto block = juce::dsp::AudioBlock<float>(buffer);
+        saturation.process(block);
+
+        if (sample > 0)
+            largestDelta = std::max(largestDelta, std::abs(buffer.getSample(0, 0) - previous));
+
+        previous = buffer.getSample(0, 0);
+    }
+
+    REQUIRE(largestDelta < 0.2f);
+}
+
+TEST_CASE("Saturation Jiles-Atherton stage produces stronger even than odd low harmonics") {
+    constexpr auto harmonicBlockSize = 48000;
+    constexpr auto fundamentalHz = 1000.0f;
+
+    Saturation saturation;
+    saturation.prepare({sampleRate, harmonicBlockSize, channelCount});
+    saturation.setDrive(0.75f);
+
+    juce::AudioBuffer<float> buffer(static_cast<int>(channelCount), harmonicBlockSize);
+    fillSine(buffer, fundamentalHz, juce::Decibels::decibelsToGain(-6.0f));
+
+    auto block = juce::dsp::AudioBlock<float>(buffer);
+    saturation.process(block);
+
+    const auto second = getDftMagnitude(buffer, 2, fundamentalHz);
+    const auto third = getDftMagnitude(buffer, 3, fundamentalHz);
+
+    REQUIRE(second > 0.0001f);
+    REQUIRE(third > 0.00001f);
+    REQUIRE(second > third);
 }
 
 TEST_CASE("Saturation drive reduces high-frequency level more than low-frequency level") {

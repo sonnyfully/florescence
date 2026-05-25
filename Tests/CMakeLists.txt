@@ -1,6 +1,8 @@
 add_executable(CharacterFX_Tests
     test_tilteq.cpp
+    test_jiles_atherton.cpp
     test_saturation.cpp
+    ../Source/DSP/JilesAtherton.cpp
     ../Source/DSP/Saturation.cpp
     ../Source/DSP/TiltEQ.cpp)
 

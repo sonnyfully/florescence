@@ -56,7 +56,7 @@ Pinned reference tracks (the A/B targets for preset design — listed in `docs/a
 
 - **Framework: JUCE 8.x.** C++20. Industry standard for AU/VST3, mature, well-documented, free for revenue under $50k.
 - **Build: CMake.** Modern JUCE supports it cleanly, scales to CI.
-- **DSP utilities: chowdsp_utils only after licence review.** Do not add or link any chowdsp_utils module without resolving the relevant licensing stop point first; assume GPLv3 until proven otherwise.
+- **DSP utilities: JUCE first, clean-room from papers second.** Licence review found only `chowdsp_buffers`, `chowdsp_math`, and `chowdsp_simd` BSD-safe; the DSP modules needed for v1 are GPLv3-blocked. Do not add chowdsp DSP modules to `Source/DSP/`.
 - **Convolution: `juce::dsp::Convolution`.** Partitioned convolution, zero-latency mode available, handles stereo IRs.
 - **GUI: JUCE-native components + custom LookAndFeel.** No WebView at v1 — scope discipline. WebView is a v2 design uplift if it makes sense.
 - **Tests: Catch2.** DSP module unit tests with deterministic inputs.
@@ -112,7 +112,7 @@ The Character switch is a three-position segmented control. It changes the emoti
 
 - **Velvet** — soft, seductive, warm. Kissland / After Hours register. Gentler asymmetric saturation, warmer upper-mid emphasis, plate/warm chamber IRs, slower deeper chorus, gentle filter moves.
 - **Onyx** — cold, hard, menacing. Gesaffelstein / industrial register. Harder saturation, upper-mid bite, concrete/metallic/large dark spaces, tighter mechanical chorus, more aggressive filter resonance options.
-- **Chrome** — clean, polished, futurist. Dawn FM / Blade Runner 2049 register. Cleanest saturation based on the Stage 2 soft-clip + dynamic LPF baseline, clean halls/bright chambers, lush glossy chorus, neutral controlled filtering.
+- **Chrome** — clean, polished, futurist. Dawn FM / Blade Runner 2049 register. Cleanest saturation based on the Stage 2 clean-room Jiles-Atherton baseline, clean halls/bright chambers, lush glossy chorus, neutral controlled filtering.
 
 ### Global controls
 

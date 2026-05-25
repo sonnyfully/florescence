@@ -79,3 +79,6 @@ If the agent thinks a *new* ambiguity has appeared mid-work that meets the bar f
 - No "I'll fix it later" TODOs without a corresponding issue or Q-ID in `open_questions.md`.
 - No silent defaults on stop points. Every Q-ID hit must surface explicitly.
 - No audio-thread violations (allocations, locks, I/O). Use the proper JUCE patterns.
+- No chowdsp DSP modules in `Source/DSP/`. Only `chowdsp_buffers`, `chowdsp_math`, and `chowdsp_simd` are licence-safe (BSD). Everything else is GPLv3 and blocks commercial release. When tempted, reach for `juce::dsp` first, then clean-room implementations from papers.
+- No copying or referencing code from GPLv3 sources (`chowdsp_waveshapers`, AnalogTapeModel, CHOW Tape, etc.) even "just to compare." Algorithms come from papers, not from code.
+- Every DSP module's header comments must cite the paper or library reference it implements from. Auditable trail.

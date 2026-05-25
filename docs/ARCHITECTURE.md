@@ -44,7 +44,7 @@ The control surface sits above the modules. Modules remain fixed-order DSP machi
             │
             ▼
    ┌─────────────────────────┐
-   │  Saturation             │   soft-clip + dynamic LPF, 4x oversampled
+   │  Saturation             │   clean-room Jiles-Atherton + HF loss, 4x oversampled
    │  (DSP/Saturation)       │   ← v2 neural voicing stage inserts AFTER this
    └─────────────────────────┘
             │
@@ -188,7 +188,7 @@ Modules are no longer top-level product concepts in the UI. The fixed chain is i
 Pure DSP. No JUCE GUI dependencies, no parameter system dependencies — these modules take raw values (frequencies, gains, mix amounts) and process audio. Parameter mapping happens one layer up.
 
 - **`TiltEQ.cpp/h`** — Low-shelf + high-shelf tied to a single tilt parameter. Pre-saturation only — purpose is to *steer* saturation behaviour, not to be a user-facing EQ.
-- **`Saturation.cpp/h`** — Stage 2 soft-clip + drive-coupled dynamic LPF, 4x oversampled. Burn drives this; Character mode changes the curve/emphasis around it. Reference: 2026-05-25 saturation decision, Pirkle Chapter 19, *DAFX* Chapter 4.
+- **`Saturation.cpp/h`** — Clean-room Jiles-Atherton tape hysteresis from Jiles/Atherton 1986 and Chowdhury DAFx 2019, wrapped with drive-coupled dynamic HF loss, fixed 8kHz post rolloff, DC blocking, and 4x oversampling. Burn drives the input push into the model; Character mode changes the curve/emphasis around it later. Reference: 2026-05-25 clean-room saturation decision and `docs/research/saturation.md`.
 - **`Chorus.cpp/h`** — Multi-voice modulated delay line, BBD-flavoured if licensing/implementation permits (see Q-CHOR-1-LIC). True stereo: L and R have decorrelated LFO phases for width. Pulse is the primary user-facing motion control.
 - **`Filter.cpp/h`** — State-variable filter (TPT topology), low-pass primary. Envelope follower on input signal modulates cutoff. Slow attack/release on the follower — this is the "duck" feel, not a sharp sidechain.
 - **`Delay.cpp/h`** — Stereo delay lines with independent L/R times for ping-pong. BPM sync via host transport. Feedback path goes through a one-pole low-pass (filtered feedback — repeats get darker, not brighter). Reference: standard delay design, *DAFX* Chapter 2.
