@@ -3,6 +3,9 @@
 namespace {
 constexpr auto tiltParameterId = "tiltDb";
 constexpr auto saturationDriveParameterId = "saturationDrive";
+constexpr auto chorusDepthParameterId = "chorusDepth";
+constexpr auto chorusRateParameterId = "chorusRate";
+constexpr auto chorusMixParameterId = "chorusMix";
 
 void configureSlider(juce::Slider& slider) {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -20,20 +23,38 @@ FlorescenceAudioProcessorEditor::FlorescenceAudioProcessorEditor(
     : AudioProcessorEditor(&ownerProcessor), audioProcessor(ownerProcessor) {
     configureSlider(tiltSlider);
     configureSlider(saturationSlider);
+    configureSlider(chorusDepthSlider);
+    configureSlider(chorusRateSlider);
+    configureSlider(chorusMixSlider);
     configureLabel(tiltLabel, "Tilt");
     configureLabel(saturationLabel, "Saturation");
+    configureLabel(chorusDepthLabel, "Chorus Depth");
+    configureLabel(chorusRateLabel, "Chorus Rate");
+    configureLabel(chorusMixLabel, "Chorus Mix");
 
     addAndMakeVisible(tiltSlider);
     addAndMakeVisible(saturationSlider);
+    addAndMakeVisible(chorusDepthSlider);
+    addAndMakeVisible(chorusRateSlider);
+    addAndMakeVisible(chorusMixSlider);
     addAndMakeVisible(tiltLabel);
     addAndMakeVisible(saturationLabel);
+    addAndMakeVisible(chorusDepthLabel);
+    addAndMakeVisible(chorusRateLabel);
+    addAndMakeVisible(chorusMixLabel);
 
     auto& parameters = audioProcessor.getParameters();
     tiltAttachment = std::make_unique<SliderAttachment>(parameters, tiltParameterId, tiltSlider);
     saturationAttachment = std::make_unique<SliderAttachment>(
         parameters, saturationDriveParameterId, saturationSlider);
+    chorusDepthAttachment =
+        std::make_unique<SliderAttachment>(parameters, chorusDepthParameterId, chorusDepthSlider);
+    chorusRateAttachment =
+        std::make_unique<SliderAttachment>(parameters, chorusRateParameterId, chorusRateSlider);
+    chorusMixAttachment =
+        std::make_unique<SliderAttachment>(parameters, chorusMixParameterId, chorusMixSlider);
 
-    setSize(360, 220);
+    setSize(720, 260);
 }
 
 void FlorescenceAudioProcessorEditor::paint(juce::Graphics& graphics) {
@@ -48,11 +69,21 @@ void FlorescenceAudioProcessorEditor::resized() {
     auto bounds = getLocalBounds().reduced(24);
     bounds.removeFromTop(40);
 
-    auto left = bounds.removeFromLeft(bounds.getWidth() / 2).reduced(12);
-    auto right = bounds.reduced(12);
+    auto columnWidth = bounds.getWidth() / 5;
+    auto tiltColumn = bounds.removeFromLeft(columnWidth).reduced(8);
+    auto saturationColumn = bounds.removeFromLeft(columnWidth).reduced(8);
+    auto chorusDepthColumn = bounds.removeFromLeft(columnWidth).reduced(8);
+    auto chorusRateColumn = bounds.removeFromLeft(columnWidth).reduced(8);
+    auto chorusMixColumn = bounds.reduced(8);
 
-    tiltLabel.setBounds(left.removeFromTop(24));
-    tiltSlider.setBounds(left);
-    saturationLabel.setBounds(right.removeFromTop(24));
-    saturationSlider.setBounds(right);
+    tiltLabel.setBounds(tiltColumn.removeFromTop(24));
+    tiltSlider.setBounds(tiltColumn);
+    saturationLabel.setBounds(saturationColumn.removeFromTop(24));
+    saturationSlider.setBounds(saturationColumn);
+    chorusDepthLabel.setBounds(chorusDepthColumn.removeFromTop(24));
+    chorusDepthSlider.setBounds(chorusDepthColumn);
+    chorusRateLabel.setBounds(chorusRateColumn.removeFromTop(24));
+    chorusRateSlider.setBounds(chorusRateColumn);
+    chorusMixLabel.setBounds(chorusMixColumn.removeFromTop(24));
+    chorusMixSlider.setBounds(chorusMixColumn);
 }

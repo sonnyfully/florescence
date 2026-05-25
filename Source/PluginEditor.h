@@ -19,11 +19,20 @@ class FlorescenceAudioProcessorEditor final : public juce::AudioProcessorEditor 
 
     juce::Slider tiltSlider;
     juce::Slider saturationSlider;
+    juce::Slider chorusDepthSlider;
+    juce::Slider chorusRateSlider;
+    juce::Slider chorusMixSlider;
     juce::Label tiltLabel;
     juce::Label saturationLabel;
+    juce::Label chorusDepthLabel;
+    juce::Label chorusRateLabel;
+    juce::Label chorusMixLabel;
 
     std::unique_ptr<SliderAttachment> tiltAttachment;
     std::unique_ptr<SliderAttachment> saturationAttachment;
+    std::unique_ptr<SliderAttachment> chorusDepthAttachment;
+    std::unique_ptr<SliderAttachment> chorusRateAttachment;
+    std::unique_ptr<SliderAttachment> chorusMixAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FlorescenceAudioProcessorEditor)
 };
