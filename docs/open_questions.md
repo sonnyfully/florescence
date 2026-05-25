@@ -107,35 +107,24 @@ Q-IR-1 moved to `docs/decisions.md` on 2026-05-24. Licence terms must still be r
 
 ## Chorus module
 
-### Q-CHOR-1-LIC: Re-verify chowdsp BBD primitives licence before any use
-- Where it lives: `Source/DSP/Chorus.cpp` + `docs/decisions.md`
-- Triggered when: **Before Q-CHOR-1 is resolved**, and before any `chowdsp_utils` module is added as a dependency anywhere in the project.
-- Background: 2026-05-25 saturation algorithm swap was forced by the discovery that `chowdsp_utils` modules are GPLv3, incompatible with Florescence's closed-source commercial model. Q-CHOR-1's current default of "chowdsp BBD primitives" reproduces the same problem. **Default assumption: every chowdsp_utils module is GPLv3 unless verified otherwise.**
-- Options if chowdsp BBD is confirmed GPLv3:
-  - **Re-implement BBD from papers/blogs.** Well-documented technique (Reiss & McPherson book, various blog write-ups). Maybe 2–3 days of work.
-  - **Use Airwindows-flavoured BBD/chorus code.** MIT-licensed, explicitly cleared for commercial use. Different aesthetic from classic Juno but worth listening to.
-  - **Pure delay-line modulation, no BBD modelling.** Cheapest, generic-sounding. Acceptable as a v1 fallback if the chain composes well around it.
-  - **Obtain commercial chowdsp licence.** Only if BBD authenticity is critical and the other options sound clearly worse.
-- Default if pushed: **NO DEFAULT** — must be resolved before Q-CHOR-1.
-- Owner decision needed by: End of week 2 (so Q-CHOR-1 isn't blocked entering week 3)
+### ~~Q-CHOR-1-LIC: Re-verify chowdsp BBD primitives licence before any use~~ — RESOLVED 2026-05-25
+**Resolved -> treat ChowDSP BBD / `chowdsp_dsp_utils` as unavailable for v1.**
+GPLv3 licensing blocks use in Florescence's closed-source commercial model
+unless a non-GPL commercial licence is obtained; commercial licensing is not
+being pursued for v1. See `decisions.md` 2026-05-25.
 
-### Q-CHOR-1: BBD model fidelity
-- Where it lives: `Source/DSP/Chorus.cpp`
-- Triggered when: Implementing in week 3
-- **Blocked by Q-CHOR-1-LIC.** Original options listed below stand or fall based on that resolution; rewrite this entry once Q-CHOR-1-LIC is closed.
-- Options (subject to licence verification):
-  - Pure delay-line modulation (cheapest, sounds generic)
-  - BBD-style with high-frequency loss + companding (more authentic, more code)
-  - ~~chowdsp BBD primitives (good middle ground, MIT-licensed)~~ — **this default was wrong; chowdsp_utils is GPLv3, not MIT. See Q-CHOR-1-LIC.**
-- Default if pushed: **NO DEFAULT until Q-CHOR-1-LIC resolved.**
-- Owner decision needed by: Week 3
+### ~~Q-CHOR-1: BBD model fidelity~~ — RESOLVED 2026-05-25
+**Resolved -> clean-room BBD-flavoured delay-line modulation.** Implement a
+modulated delay line with smooth fractional interpolation and wet-path
+bandwidth loss / HF softening. Optional companding and delay-path nonlinearity
+are Stage 6 tuning additions, not required for the initial implementation.
+No GPL-derived code and no references to `chowdsp_dsp_utils` source. See
+`decisions.md` 2026-05-25 and `docs/research/chorus.md`.
 
-### Q-CHOR-2: Voice count
-- Where it lives: `Source/DSP/Chorus.cpp`
-- Triggered when: Implementing
-- Options: 2 (classic Juno), 3, 4 (denser)
-- Default if pushed: 2, Juno-style
-- Owner decision needed by: Week 3
+### ~~Q-CHOR-2: Voice count~~ — RESOLVED 2026-05-25
+**Resolved -> 2 voices, Juno-style, with decorrelated L/R LFO phases.** If
+Stage 6 preset tuning proves this too narrow, a possible 3rd voice / density
+mode is parked in `v1.x_ideas.md`. See `decisions.md` 2026-05-25.
 
 ---
 

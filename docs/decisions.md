@@ -387,3 +387,51 @@ the cost, or choose the asymmetric-polynomial fallback.
 - `Tests/test_jiles_atherton.cpp`
 - `Tests/test_saturation.cpp`
 - `docs/research/saturation.md`
+
+## 2026-05-25 — Stage 3 Chorus: clean-room BBD-flavoured direction
+
+Resolved from `docs/open_questions.md`: Q-CHOR-1-LIC, Q-CHOR-1, and Q-CHOR-2.
+
+### Q-CHOR-1-LIC — ChowDSP BBD / `chowdsp_dsp_utils`: **unavailable for v1**
+
+Decision: do not use ChowDSP BBD code or `chowdsp_dsp_utils` for the v1 Chorus module.
+
+Rationale: the relevant upstream ChowDSP DSP utility module is GPLv3. Linking GPLv3 DSP code into Florescence would conflict with the closed-source commercial plugin model unless a non-GPL commercial licence were obtained. Commercial licensing from ChowDSP is not being pursued for v1 because the goal is a focused, owned implementation that keeps Stage 3 moving.
+
+Considered and rejected:
+
+- Use ChowDSP anyway: rejected because it would force a licensing conflict.
+- Pursue commercial ChowDSP licensing for v1: rejected for scope discipline.
+- Use Airwindows-flavoured chorus code: rejected as the baseline because the locked target is a clean-room Juno-style design, not adopting another implementation's voicing.
+
+### Q-CHOR-1 — Chorus fidelity: **clean-room BBD-flavoured delay-line modulation**
+
+Decision: implement Chorus as a clean-room modulated delay line with BBD-flavoured wet-path behaviour.
+
+Required characteristics:
+
+- LFO-driven modulated delay line with smooth fractional interpolation.
+- Bandwidth loss / HF softening on the delayed path, implemented with a simple low-pass stage.
+- No GPL-derived code and no references to `chowdsp_dsp_utils` source.
+- Use public DSP literature and clean-room implementation notes only; see `docs/research/chorus.md`.
+
+Optional for v1 if scope and listening tests justify it:
+
+- Light companding around the delayed path to approximate BBD signal-to-noise behaviour.
+- Mild delay-path saturation to add density.
+
+These optional behaviours are not part of the first scaffold. If added, they must be documented and tested as deliberate DSP choices rather than hidden colour.
+
+### Q-CHOR-2 — Voice count: **2 voices, Juno-style**
+
+Decision: start with two chorus voices. Use decorrelated L/R LFO phases to create stereo width while keeping the baseline recognisable as Juno-style chorus rather than a dense modern ensemble.
+
+Rationale: two voices match the iconic Juno mono-to-stereo chorus reference and keep the mono-sum / phase risk manageable. If Stage 6 preset design shows that some presets need more density, the preferred v1 path is to tune Character/Pulse depth and rate ranges rather than adding more voices. A possible third voice or density mode is parked in `v1.x_ideas.md` for v1.x.
+
+Affected files:
+
+- `docs/open_questions.md`
+- `docs/research/chorus.md`
+- `v1.x_ideas.md`
+- future `Source/DSP/Chorus.{h,cpp}`
+- future `Tests/test_chorus.cpp`
