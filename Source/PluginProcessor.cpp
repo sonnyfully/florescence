@@ -6,6 +6,9 @@ namespace {
 constexpr auto gainParameterId = "inputGain";
 constexpr auto tiltParameterId = "tiltDb";
 constexpr auto saturationDriveParameterId = "saturationDrive";
+constexpr auto chorusDepthParameterId = "chorusDepth";
+constexpr auto chorusRateParameterId = "chorusRate";
+constexpr auto chorusMixParameterId = "chorusMix";
 } // namespace
 
 FlorescenceAudioProcessor::FlorescenceAudioProcessor()
@@ -20,6 +23,10 @@ FlorescenceAudioProcessor::FlorescenceAudioProcessor()
     auto saturationModule = std::make_unique<Saturation>();
     saturation = saturationModule.get();
     fxChain.push_back(std::move(saturationModule));
+
+    auto chorusModule = std::make_unique<Chorus>();
+    chorus = chorusModule.get();
+    fxChain.push_back(std::move(chorusModule));
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout
@@ -41,6 +48,21 @@ FlorescenceAudioProcessor::createParameterLayout() {
         juce::NormalisableRange<float>{saturationconfig::driveMin, saturationconfig::driveMax,
                                        0.001f},
         0.0f));
+
+    layout.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{chorusDepthParameterId, 1}, "Chorus Depth",
+        juce::NormalisableRange<float>{chorusconfig::depthMin, chorusconfig::depthMax, 0.001f},
+        0.5f));
+
+    layout.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{chorusRateParameterId, 1}, "Chorus Rate",
+        juce::NormalisableRange<float>{chorusconfig::rateMinHz, chorusconfig::rateMaxHz, 0.001f,
+                                       0.5f},
+        0.8f, juce::AudioParameterFloatAttributes().withLabel("Hz")));
+
+    layout.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{chorusMixParameterId, 1}, "Chorus Mix",
+        juce::NormalisableRange<float>{chorusconfig::mixMin, chorusconfig::mixMax, 0.001f}, 0.0f));
 
     return {layout.begin(), layout.end()};
 }
@@ -120,6 +142,9 @@ void FlorescenceAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
     const auto tiltDb = parameters.getRawParameterValue(tiltParameterId)->load();
     const auto saturationDrive =
         parameters.getRawParameterValue(saturationDriveParameterId)->load();
+    const auto chorusDepth = parameters.getRawParameterValue(chorusDepthParameterId)->load();
+    const auto chorusRateHz = parameters.getRawParameterValue(chorusRateParameterId)->load();
+    const auto chorusMix = parameters.getRawParameterValue(chorusMixParameterId)->load();
     const auto gain = juce::Decibels::decibelsToGain(gainDb);
 
     if (tiltEq != nullptr)
@@ -127,6 +152,12 @@ void FlorescenceAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
 
     if (saturation != nullptr)
         saturation->setDrive(saturationDrive);
+
+    if (chorus != nullptr) {
+        chorus->setDepth(chorusDepth);
+        chorus->setRateHz(chorusRateHz);
+        chorus->setMix(chorusMix);
+    }
 
     buffer.applyGain(gain);
 

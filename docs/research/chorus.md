@@ -108,6 +108,23 @@ DSP unit tests in `Tests/test_chorus.cpp`:
 - **Latency reporting:** `getLatencySamples()` reports 0 unless the implementation adds real lookahead or host-visible delay.
 - **Finite output:** long processing with high depth/rate settings produces no NaN or infinity values.
 
+## Implementation notes - 2026-05-25
+
+`Source/DSP/Chorus.{h,cpp}` now implements the Stage 3 baseline:
+
+- Two `ChorusVoice` instances, voice A at 0 degrees and voice B at 180 degrees.
+- Both voices receive the same mono-summed input `(L + R) / 2`.
+- Voice A returns the left wet signal; voice B returns the right wet signal.
+- Dry L/R content is delayed internally by the reported centre latency before crossfading with wet. This keeps the latency report truthful and avoids an undelayed dry path fighting the centred wet path.
+- Depth, rate, and mix use `juce::SmoothedValue` with a 10ms ramp.
+- Per-sample LFO delay is not smoothed directly. The smoothed depth and rate feed the LFO equation, preserving modulation while avoiding zipper noise on automation.
+- Wet-path HF loss is a clean-room one-pole low-pass at 6kHz, applied only after the delay read.
+- Constants live in `Source/DSP/ChorusConfig.h` with public reference URLs next to the Juno-style timing and BBD bandwidth-loss choices.
+
+The unit suite now covers determinism, silence, zero-depth stereo coherence,
+smooth parameter ramps, latency reporting, LFO continuity on rate changes, mono
+input widening, HF rolloff, bounded output, and mono-sum level retention.
+
 Not tested in unit tests:
 
 - Whether the chorus feels Juno-adjacent enough.

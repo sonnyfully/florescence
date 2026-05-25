@@ -435,3 +435,29 @@ Affected files:
 - `v1.x_ideas.md`
 - future `Source/DSP/Chorus.{h,cpp}`
 - future `Tests/test_chorus.cpp`
+
+## 2026-05-25 — Stage 3 Chorus: mono-sum tradeoff
+
+### Decision
+
+The v1 Chorus module keeps true-stereo width as the priority and accepts mild
+mono thinning as the tradeoff. The implemented topology uses two wet voices fed
+from mono-summed input, with LFO phases at 0 degrees and 180 degrees. Left wet
+receives voice 1, right wet receives voice 2, and the dry L/R paths are delayed
+by the reported centre latency before dry/wet crossfade.
+
+### Rationale
+
+This matches the Stage 3 goal: recognisable Juno-coded stereo motion without
+adding a third voice, crossfeed control, companding, or mode-specific tuning in
+the implementation PR. Forcing mono-perfect output would collapse the width
+that this module exists to add. The current unit check verifies that summing the
+full-depth stereo output to mono retains useful level rather than causing
+catastrophic cancellation; exact mono tone is a Stage 6 listening question.
+
+### Affected files
+
+- `Source/DSP/Chorus.{h,cpp}`
+- `Source/DSP/ChorusConfig.h`
+- `Tests/test_chorus.cpp`
+- `docs/research/chorus.md`
