@@ -4,6 +4,29 @@ How the plugin is laid out and how the pieces fit together. Read this after `doc
 
 ## High-level signal flow
 
+The control surface sits above the modules. Modules remain fixed-order DSP machinery; the producer-facing model is macro + mode first.
+
+```
+   Host automation / GUI
+            │
+            ▼
+   ┌────────────────────────────────────────────┐
+   │  v1 control surface                         │
+   │  Atmosphere · Burn · Pulse                  │
+   │  Character: Velvet / Onyx / Chrome          │
+   │  Day/Night · Output · Dry/Wet · preset       │
+   └────────────────────────────────────────────┘
+            │
+            ▼
+   ┌────────────────────────────────────────────┐
+   │  MacroMapping + CharacterPreset             │
+   │  mode snapshot + macro offsets + smoothing  │
+   └────────────────────────────────────────────┘
+            │
+            ▼
+   Internal DSP parameter targets
+```
+
 ```
    Stereo audio in (from DAW)
             │
@@ -21,7 +44,7 @@ How the plugin is laid out and how the pieces fit together. Read this after `doc
             │
             ▼
    ┌─────────────────────────┐
-   │  Saturation             │   tape-style, asymmetric, oversampled 2-4x
+   │  Saturation             │   soft-clip + dynamic LPF, 4x oversampled
    │  (DSP/Saturation)       │   ← v2 neural voicing stage inserts AFTER this
    └─────────────────────────┘
             │
@@ -46,13 +69,13 @@ How the plugin is laid out and how the pieces fit together. Read this after `doc
             ▼
    ┌─────────────────────────┐
    │  Convolution reverb     │   juce::dsp::Convolution, curated IRs
-   │  (DSP/ConvReverb)       │   stereo-true, modulated wet path
+   │  (DSP/ConvReverb)       │   stereo-true, Pulse-modulated wet path
    └─────────────────────────┘
             │
             ▼
    ┌─────────────────────────┐
-   │  Dry/wet mix + width    │
-   │  + output trim          │
+   │  Day/Night brightness   │
+   │  + dry/wet + output     │
    └─────────────────────────┘
             │
             ▼
@@ -158,22 +181,99 @@ character-fx/
 
 ## Module responsibilities
 
+Modules are no longer top-level product concepts in the UI. The fixed chain is implementation detail behind Atmosphere, Burn, Pulse, and the Character switch. DSP modules should expose raw, stable, smoothed internal parameters; `Source/Params/MacroMapping.cpp` decides how the user-facing controls reach them.
+
 ### `Source/DSP/`
 
 Pure DSP. No JUCE GUI dependencies, no parameter system dependencies — these modules take raw values (frequencies, gains, mix amounts) and process audio. Parameter mapping happens one layer up.
 
 - **`TiltEQ.cpp/h`** — Low-shelf + high-shelf tied to a single tilt parameter. Pre-saturation only — purpose is to *steer* saturation behaviour, not to be a user-facing EQ.
-- **`Saturation.cpp/h`** — Asymmetric soft-clip with tape-style hysteresis. Oversampled 2x or 4x (decide in week 2 — 4x sounds better, 2x leaves CPU headroom for the convolution reverb). Reference: chowdsp_utils saturation primitives, Pirkle Chapter 19, *DAFX* Chapter 4.
-- **`Chorus.cpp/h`** — Multi-voice modulated delay line, BBD-flavoured (slight high-frequency loss, slight pitch instability). True stereo: L and R have decorrelated LFO phases for width. Reference: Juno-60 chorus circuit analysis (multiple writeups online), chowdsp BBD model.
+- **`Saturation.cpp/h`** — Stage 2 soft-clip + drive-coupled dynamic LPF, 4x oversampled. Burn drives this; Character mode changes the curve/emphasis around it. Reference: 2026-05-25 saturation decision, Pirkle Chapter 19, *DAFX* Chapter 4.
+- **`Chorus.cpp/h`** — Multi-voice modulated delay line, BBD-flavoured if licensing/implementation permits (see Q-CHOR-1-LIC). True stereo: L and R have decorrelated LFO phases for width. Pulse is the primary user-facing motion control.
 - **`Filter.cpp/h`** — State-variable filter (TPT topology), low-pass primary. Envelope follower on input signal modulates cutoff. Slow attack/release on the follower — this is the "duck" feel, not a sharp sidechain.
 - **`Delay.cpp/h`** — Stereo delay lines with independent L/R times for ping-pong. BPM sync via host transport. Feedback path goes through a one-pole low-pass (filtered feedback — repeats get darker, not brighter). Reference: standard delay design, *DAFX* Chapter 2.
-- **`ConvReverb.cpp/h`** — Wraps `juce::dsp::Convolution`. Loads IRs from `Resources/IRs/`. Crossfades between IRs when Space macro moves between categories. Modulation on wet path (slight chorus before convolution) to break up the static nature of convolution reverb — this is the "alive" trick.
+- **`ConvReverb.cpp/h`** — Wraps `juce::dsp::Convolution`. Loads IRs from `Resources/IRs/`. Atmosphere drives wet level; Character mode influences IR character per Q-CHAR-2. Pulse drives wet-path modulation to break up static convolution.
 
 ### `Source/Params/`
 
-- **`ParameterLayout.cpp/h`** — Defines the `AudioProcessorValueTreeState` with all 7 macros + sync toggle as automatable parameters. These are what the DAW sees.
-- **`MacroMapping.cpp/h`** — The taste-encoding layer. Each macro is a function from `[0, 1]` to a vector of internal DSP parameter values. Curves are non-linear and hand-designed per macro. *This is where half the product lives.* (See `docs/decisions.md` for design notes per macro.)
+- **`ParameterLayout.cpp/h`** — Defines the `AudioProcessorValueTreeState` with Atmosphere, Burn, Pulse, Character mode, Day/Night, Output, Dry/Wet, and any decided stereo width control. These are what the DAW sees.
+- **`MacroMapping.cpp/h`** — The taste-encoding layer. Each macro is a function from `[0, 1]` to a vector of internal DSP parameter offsets inside the active Character mode. Curves are non-linear and hand-designed per macro. *This is where half the product lives.* (See `docs/decisions.md` for design notes per macro.)
 - **`PresetManager.cpp/h`** — JSON preset format, versioned. Factory bank loaded from `Resources/Presets/` at startup. User presets saved to platform-standard location (`~/Library/Audio/Presets/<vendor>/<plugin>/`).
+
+## Macro and Character switch architecture
+
+The Character switch provides the baseline; macros modulate within that baseline. In other words, Burn at 0.7 in Velvet and Burn at 0.7 in Onyx are the same user gesture but intentionally different internal parameter values.
+
+### Atmosphere mapping
+
+Atmosphere is a meta-macro. It should not own a single DSP module; it raises the curated "more atmosphere" baseline across multiple targets.
+
+| Target | Proposed mapping | Curve status |
+| --- | --- | --- |
+| Burn baseline | Adds positive offset into Burn's effective value | TBD in Q-MAC-3 |
+| Pulse baseline | Adds positive offset into Pulse's effective value | TBD in Q-MAC-3 |
+| Reverb wet | Near-zero at 0, obviously wet at 1 | TBD in Q-MAC-3 |
+| Delay send / feedback | Possible subtle lift if later listening proves it belongs | Not locked; surface before implementation |
+
+### Burn mapping
+
+Burn is the density axis. It replaces the old Character macro name but narrows its scope to saturation-adjacent behaviour.
+
+| Target | Proposed mapping | Curve status |
+| --- | --- | --- |
+| Saturation drive | Primary Burn target | Q-SAT-2, renamed to Burn drive curve |
+| Dynamic LPF drive coupling | Follows saturation drive, with mode-specific range | Q-SAT-2 + CharacterPreset |
+| Post-saturation low-mid emphasis | Positive lift as Burn increases | Hand-tuned under Q-MAC-1 |
+| Chorus depth | Only if Q-MAC-4 resolves yes | Open |
+
+### Pulse mapping
+
+Pulse is the motion axis.
+
+| Target | Proposed mapping | Curve status |
+| --- | --- | --- |
+| Chorus rate | Mode-specific rate range, increased by Pulse | Hand-tuned under Q-MAC-1 |
+| Chorus depth | Primary depth movement target | Hand-tuned under Q-MAC-1 |
+| Delay modulation depth | Increases life in repeats | Hand-tuned under Q-MAC-1 |
+| Convolution wet-path modulation | Drives the "alive" trick from Q-IR-4 | Q-IR-4 + Q-MAC-1 |
+
+### CharacterPreset data structure
+
+Proposed implementation shape for the later C++ PR:
+
+```cpp
+enum class CharacterMode
+{
+    Velvet,
+    Onyx,
+    Chrome
+};
+
+struct CharacterPreset
+{
+    CharacterMode mode;
+
+    SaturationTargets saturation;
+    PostSaturationToneTargets postSaturationTone;
+    ChorusTargets chorus;
+    FilterTargets filter;
+    DelayTargets delay;
+    ReverbTargets reverb;
+    BrightnessTargets brightness;
+};
+```
+
+`CharacterPreset` holds per-mode baselines and legal ranges for every internal parameter affected by the Character switch. `MacroMapping` then computes effective targets like:
+
+```cpp
+effective = modeBaseline + macroOffset(mode, macroValue);
+```
+
+The exact combination rules are part of the future implementation PR and must be reviewed carefully because Atmosphere intentionally overlaps Burn, Pulse, and reverb wet (Q-MAC-3).
+
+### Switching behaviour
+
+Switching Velvet / Onyx / Chrome applies a different parameter snapshot. Whether that snapshot is instant, short-crossfaded, or long-morphed is open in Q-CHAR-1. Whether Character mode swaps the available reverb IR set or biases default IR choice is open in Q-CHAR-2.
 
 ### `Source/GUI/`
 
@@ -194,10 +294,12 @@ Naming convention: `<category>_<descriptor>_<length>.wav`. Example: `plate_emt14
 
 ### `Resources/Presets/`
 
-60-preset factory bank as versioned JSON. Three subdirectories:
-- `Vocals/` — 20 presets
-- `Synths/` — 20 presets
-- `Drums/` — 20 presets
+60-preset factory bank as versioned JSON. The old source-typed split (`Vocals/`, `Synths/`, `Drums/`) is superseded by Q-PRE-1-REVISED. Proposed themed directories:
+- `Spaces/` — heavy reverb-led presets
+- `Movement/` — heavy Pulse-led presets
+- `Heat/` — heavy Burn-led presets
+- `Atmospheres/` — full-stack maximalist presets
+- `Subtle/` — light-touch presets across all macros
 
 Each preset includes a `schema_version` field. v2 presets will add neural voicing parameters; v1 hosts loading v2 presets ignore unknown fields; v2 hosts loading v1 presets use defaults.
 
@@ -206,31 +308,31 @@ Each preset includes a `schema_version` field. v2 presets will add neural voicin
 ```json
 {
   "schema_version": 1,
-  "name": "Velvet Vocal Ad-Lib",
-  "category": "Vocals",
+  "name": "Cold Cathedral",
+  "category": "Spaces",
   "author": "Factory",
-  "description": "Wide, wet, slightly saturated — for short vocal stabs.",
+  "description": "Evocative factory preset for a large, cold nocturnal space.",
   "macros": {
-    "character": 0.42,
-    "movement": 0.31,
-    "space": 0.78,
-    "depth": 0.55,
-    "tone": 0.67,
-    "width": 0.85,
-    "mix": 1.0
+    "atmosphere": 0.78,
+    "burn": 0.42,
+    "pulse": 0.31,
+    "mix": 1.0,
+    "output_db": 0.0
   },
   "settings": {
+    "character_mode": "Chrome",
+    "day_night": "Night",
     "sync_division": "dotted_eighth"
   }
 }
 ```
 
-Macros are 0–1. The mapping from macro value to internal DSP parameters lives in code (`MacroMapping.cpp`), not in the preset. This means **changes to the macro mapping curves change every preset's sound**. That's intentional pre-v1 (it's how taste-tuning works) and locked-down at v1 ship (changing it post-ship invalidates customer presets).
+Macros are 0–1. The mapping from macro value to internal DSP parameters lives in code (`MacroMapping.cpp`), not in the preset. Character mode stores a discrete mode, not raw DSP values. This means **changes to the macro mapping curves or Character snapshots change every preset's sound**. That's intentional pre-v1 (it's how taste-tuning works) and locked-down at v1 ship (changing it post-ship invalidates customer presets).
 
 ## Latency
 
 - TiltEQ: 0
-- Saturation: 0 if 2x oversampling with linear-phase filter, or report ~1–2ms if minimum-phase
+- Saturation: 0 with the Stage 2 4x zero-latency oversampling choice
 - Chorus: 0 (delay-line based, no lookahead)
 - Filter: 0
 - Delay: 0 (the delay time is musical, not algorithmic latency)
@@ -247,7 +349,7 @@ Standard JUCE pattern:
 - **Message thread** — GUI, parameter changes, preset loading.
 - **Background thread** — IR loading on startup, activation API calls, preset bank refresh.
 
-Preset switches are the trickiest: when a preset changes 7 macros which each touch dozens of internal params, the change has to be smooth (no zipper noise, no clicks). Handled by parameter smoothing in each DSP module — every internal parameter has a `juce::SmoothedValue` wrapper with a few-ms ramp time.
+Preset and Character switches are the trickiest: when a preset changes macros or the Character switch applies a new snapshot, dozens of internal params may move at once. The change has to be smooth (no zipper noise, no clicks). Handled by parameter smoothing in each DSP module — every internal parameter has a `juce::SmoothedValue` wrapper with a few-ms ramp time, plus any Character crossfade/morph behaviour resolved in Q-CHAR-1.
 
 ## Build system
 

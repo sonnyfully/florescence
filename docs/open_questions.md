@@ -27,9 +27,9 @@ Format per question:
 ### ~~Q-SAT-1: Oversampling factor (2x vs 4x vs variable)~~ — RESOLVED 2026-05-25
 **Resolved → 4x, compile-time constant.** See `decisions.md` 2026-05-25.
 
-### Q-SAT-2: Drive curve shape (Character macro → drive amount)
+### Q-SAT-2: Drive curve shape (Burn macro → drive amount)
 - Where it lives: `Source/Params/MacroMapping.cpp`
-- Triggered when: First preset attempts in week 5–6 reveal the macro feeling "dead" at low values or "abrupt" at high
+- Triggered when: First preset attempts in week 5–6 reveal Burn feeling "dead" at low values or "abrupt" at high
 - Options: linear, exponential, S-curve, log-shaped
 - Default if pushed: linear placeholder — **but flag explicitly**, this is almost certainly wrong as final
 - Owner decision needed by: Mid-week 6 (preset tuning)
@@ -69,15 +69,17 @@ Q-IR-1 moved to `docs/decisions.md` on 2026-05-24. Licence terms must still be r
 
 ### Q-IR-2: IR count and category split
 - Where it lives: `docs/research/ir-sourcing.md`
-- Triggered when: Designing the Space macro behaviour
+- Triggered when: Designing the reverb library and resolving whether Character modes swap IR sets (Q-CHAR-2)
 - Options:
   - 8 IRs: 2 plate, 2 hall, 2 chamber, 2 designed
   - 12 IRs: more variety per category
   - 16 IRs: maximum variety, more binary size
-- Default if pushed: 8 (minimal viable), expand if Space macro feels limited
+- Default if pushed: 8 (minimal viable), expand if the reverb library feels too narrow under the Character modes
 - Owner decision needed by: Week 4
 
-### Q-IR-3: Space macro behaviour — selection vs morphing
+### ~~Q-IR-3: Space macro behaviour — selection vs morphing~~ — SUPERSEDED 2026-05-25
+**Superseded by the north-star control surface.** The Space macro no longer exists. Atmosphere drives reverb wet level per Q-MAC-3; IR character is tied to Character mode per Q-CHAR-2. The previous "Space selects vs morphs IRs" question no longer applies in this form.
+
 - Where it lives: `Source/DSP/ConvReverb.cpp` + `Source/Params/MacroMapping.cpp`
 - Triggered when: Implementing the Space macro mapping
 - Options:
@@ -191,7 +193,9 @@ Q-IR-1 moved to `docs/decisions.md` on 2026-05-24. Licence terms must still be r
 - Default if pushed: hand-crafted, but **agent must NOT just pick values silently** — every macro's mapping table goes through human review before merge
 - Owner decision needed by: Week 5
 
-### Q-MAC-2: Macro range overlap
+### ~~Q-MAC-2: Macro range overlap~~ — SUPERSEDED 2026-05-25
+**Superseded by the Atmosphere meta-macro.** Atmosphere is a meta-macro and by definition overlaps with Burn, Pulse, and reverb wet. Burn and Pulse may or may not share targets — see Q-MAC-4. The "no overlap" default no longer applies at the macro level; it applies among Burn and Pulse if Q-MAC-4 resolves to the default.
+
 - Where it lives: `Source/Params/MacroMapping.cpp`
 - Triggered when: Designing each macro's parameter touches
 - Should multiple macros touch the same internal parameter? E.g. both Character and Tone touching the filter cutoff?
@@ -200,11 +204,56 @@ Q-IR-1 moved to `docs/decisions.md` on 2026-05-24. Licence terms must still be r
 - Default if pushed: no overlap at v1 (simpler reasoning, fewer surprise interactions)
 - Owner decision needed by: Week 5
 
+### Q-MAC-3: Atmosphere meta-macro mapping curve
+- Where it lives: `Source/Params/MacroMapping.cpp`
+- Triggered when: Implementing Atmosphere routing in week 5
+- How does Atmosphere scale Burn, Pulse, and reverb wet?
+- Options:
+  - Linear across all targets
+  - Exponential across all targets
+  - S-curve across all targets
+  - Per-target curves, each hand-tuned
+- Default if pushed: each target gets its own hand-tuned curve
+- Owner decision needed by: Week 5
+
+### Q-MAC-4: Does Burn drive chorus depth at high values?
+- Where it lives: `Source/Params/MacroMapping.cpp`
+- Triggered when: Designing Burn and Pulse target ownership
+- Options:
+  - Burn affects saturation-adjacent parameters only
+  - Burn also pushes chorus depth at high values
+  - Burn affects chorus only in selected Character modes
+- Default if pushed: Burn affects saturation parameters only; chorus depth lives under Pulse
+- Owner decision needed by: Week 5
+
+---
+
+## Character switch
+
+### Q-CHAR-1: Character switch — selector, crossfade, or morph?
+- Where it lives: `Source/Params/MacroMapping.cpp` + affected DSP modules
+- Triggered when: Implementing the Velvet / Onyx / Chrome Character switch
+- Options:
+  - Instant selector: click applies the new parameter snapshot immediately
+  - Short crossfade: e.g. 50ms, click-free but feels instantaneous
+  - Longer morph: e.g. 500ms, intentionally audible "this is changing" feel
+- Default if pushed: crossfade over 50ms, click-free but feels instantaneous
+- Owner decision needed by: Week 5
+
+### Q-CHAR-2: Character switch — does it affect the reverb IR set?
+- Where it lives: `Resources/IRs/`, `Source/DSP/ConvReverb.cpp`, `Source/Params/MacroMapping.cpp`
+- Triggered when: Designing CharacterPreset reverb values and IR library size
+- Options:
+  - Each mode has its own IR list; switching mode swaps the IR set entirely
+  - All IRs are available in all modes; each mode biases the default selection
+- Default if pushed: all IRs available in all modes, with Character mode biasing the default selection
+- Owner decision needed by: Week 4
+
 ---
 
 ## Preset design
 
-### Q-PRE-1: 60-preset category split
+### ~~Q-PRE-1: 60-preset category split~~ — SUPERSEDED 2026-05-25 by Q-PRE-1-REVISED
 - Where it lives: `Resources/Presets/`
 - Triggered when: Week 6 preset week starts
 - Options:
@@ -214,7 +263,18 @@ Q-IR-1 moved to `docs/decisions.md` on 2026-05-24. Licence terms must still be r
 - Default if pushed: 20/20/20
 - Owner decision needed by: Start of week 6
 
-### Q-PRE-2: Preset naming convention
+### Q-PRE-1-REVISED: Preset split — themed, not source-typed
+- Where it lives: `Resources/Presets/`
+- Triggered when: Week 6 preset week starts
+- Background: with the atmosphere-processor framing, source-typed presets (Vocals / Synths / Drums) feel wrong. Presets should be organised by what they do to the source, not by what the source is.
+- Options:
+  - 5 themed categories: Spaces, Movement, Heat, Atmospheres, Subtle
+  - Fewer broader categories
+  - Keep source-typed categories despite the positioning shift
+- Default if pushed: 5 categories, 12 presets each = 60 presets total
+- Owner decision needed by: Start of Week 6
+
+### ~~Q-PRE-2: Preset naming convention~~ — SUPERSEDED 2026-05-25 by Q-PRE-2-REVISED
 - Where it lives: `Resources/Presets/`
 - Triggered when: Week 6
 - Options:
@@ -223,6 +283,17 @@ Q-IR-1 moved to `docs/decisions.md` on 2026-05-24. Licence terms must still be r
   - Mixed (descriptive prefix + evocative suffix)
 - Default if pushed: mixed
 - Owner decision needed by: Start of week 6
+
+### Q-PRE-2-REVISED: Preset naming — evocative
+- Where it lives: `Resources/Presets/`
+- Triggered when: Week 6 preset naming starts
+- Background: with the atmosphere framing, descriptive names such as "Bright Wide Plate" feel wrong. Preset names should sell the scene.
+- Options:
+  - Evocative only, e.g. "Velvet Curtain", "Cold Cathedral", "Late Train"
+  - Mixed descriptive + evocative
+  - Descriptive only
+- Default if pushed: evocative-only
+- Owner decision needed by: Start of Week 6
 
 ---
 
@@ -247,6 +318,26 @@ Q-IR-1 moved to `docs/decisions.md` on 2026-05-24. Licence terms must still be r
   - Both
   - Vertical + fine mode on shift-drag + double-click to reset
 - Default if pushed: vertical drag + fine mode on shift + double-click reset
+- Owner decision needed by: Week 5
+
+### Q-GUI-3: Stereo width control on main UI?
+- Where it lives: `Source/GUI/MainComponent.cpp`, `Source/Params/ParameterLayout.cpp`
+- Triggered when: Designing the Stage 5 first GUI pass and parameter layout
+- Options:
+  - 3-state button: Narrow / Normal / Wide
+  - Small slider
+  - No top-level control; width handled per-mode in the Character switch
+  - Slider hidden behind a "more" panel
+- Default if pushed: no default; this is a taste and workflow decision
+- Owner decision needed by: Week 5
+
+### Q-GUI-4: Day/Night toggle default visibility
+- Where it lives: `Source/GUI/MainComponent.cpp`, `Source/Params/ParameterLayout.cpp`
+- Triggered when: Designing the main UI and secondary settings panel
+- Options:
+  - Visible on the main UI by default, with an option to hide
+  - Hidden by default, with an option to reveal
+- Default if pushed: visible by default
 - Owner decision needed by: Week 5
 
 ---

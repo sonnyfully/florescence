@@ -27,7 +27,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - 5 reference tracks pinned in a playlist + `docs/aesthetic/reference-tracks.md` written.
 - 5 named beta customers written down in `docs/customers.md` (private).
 - IR sourcing strategy decided in principle (Q-IR-1) — paid library / free library / self-capture / mix. Actual IR acquisition happens in stage 5.
-- Figma file started — colour palette, typography, knob style, rough layout for the 7 macros. Doesn't need to be pixel-final.
+- Figma file started — colour palette, typography, knob style, rough layout for the three macros, Character switch, and global controls. Doesn't need to be pixel-final.
 - Apple Developer enrolment **not started yet** (deferred to end of stage 4 per Q-LIC-3).
 - Lemon Squeezy account created (no products set up yet).
 
@@ -139,11 +139,12 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 
 ---
 
-## Stage 3 — Chorus + Filter (Week 3)
+## Stage 3 — North-star alignment + Chorus + Filter (Week 3)
 
-**Goal:** Modulation stages working in true stereo, chain feels "alive" rather than static.
+**Goal:** Align the project to the Florescence north star before code resumes, then build modulation stages working in true stereo so the chain feels "alive" rather than static.
 
 **End state:**
+- North-star docs/planning PR merged before any Stage 3 C++ work.
 - `Chorus` module: BBD-flavoured (per Q-CHOR-1), N voices (per Q-CHOR-2), true stereo with decorrelated L/R LFO phases, depth and rate parameters.
 - `Filter` module: SVF (TPT) low-pass, cutoff + resonance parameters, envelope follower modulating cutoff per Q-FILT-2.
 - Both modules in the chain after Saturation.
@@ -159,6 +160,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - Q-FILT-2 (envelope follower scope — input only vs sidechain capable)
 
 **Deliverables:**
+- Docs/planning PR: `docs/revamp-north-star-alignment`
 - `Source/DSP/Chorus.{cpp,h}`, `Source/DSP/Filter.{cpp,h}`
 - `Tests/test_chorus.cpp`, `Tests/test_filter.cpp`
 - Notebooks for chorus modulation visualisation and filter frequency response
@@ -168,7 +170,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 **Not in scope:**
 - Delay and reverb (stage 4)
 - Sidechain input routing for filter (deferred to v1.x per Q-FILT-2 default)
-- Macro mapping (stage 6)
+- Macro mapping and Character switch implementation (stage 5)
 
 **Risks:**
 - *Chorus phasing artefacts when summed to mono* — verify mono-compatibility, but accept that "true stereo" presets won't be mono-perfect. Document in `decisions.md` what the mono-sum tradeoff is.
@@ -178,11 +180,11 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 
 ## Stage 4 — Delay + Convolution Reverb (Week 4)
 
-**Goal:** Time-based stages complete the chain. Convolution reverb is the "space" — half of why the plugin sounds expensive.
+**Goal:** Time-based stages complete the chain. Convolution reverb is the cinematic space — half of why the plugin sounds expensive.
 
 **End state:**
 - `Delay` module: stereo lines with BPM sync (divisions per Q-DEL-1), filtered feedback, ping-pong support per Q-DEL-2.
-- `ConvReverb` module: wraps `juce::dsp::Convolution`, loads IRs from `Resources/IRs/`, Space parameter selects/morphs between IRs per Q-IR-3, wet-path modulation per Q-IR-4.
+- `ConvReverb` module: wraps `juce::dsp::Convolution`, loads IRs from `Resources/IRs/`, supports Atmosphere-driven wet level and Pulse-driven wet-path modulation. Character-mode IR behaviour is resolved per Q-CHAR-2.
 - IR library populated with initial set (8 IRs per Q-IR-2 default, can grow to 12 if needed).
 - Complete chain: Tilt → Saturation → Chorus → Filter → Delay → ConvReverb working end-to-end.
 - Apple Developer enrolment initiated per Q-LIC-3 (this is the last stage where you can defer it — the next stages need signed builds for beta testing).
@@ -190,7 +192,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 
 **Stop points to resolve in this stage:**
 - Q-IR-2 (IR count and category split)
-- Q-IR-3 (Space macro behaviour — selection vs morphing)
+- Q-CHAR-2 (Character switch reverb IR set behaviour)
 - Q-IR-4 (wet path modulation approach)
 - Q-DEL-1 (BPM sync divisions)
 - Q-DEL-2 (ping-pong topology)
@@ -209,7 +211,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 
 **Not in scope:**
 - Algorithmic FDN reverb (ruled out, see CONTEXT.md)
-- IR morphing via spectral interpolation (deferred unless Q-IR-3 lands there)
+- IR morphing via spectral interpolation unless a future decision explicitly reopens it
 - Sidechain ducking on reverb tail (v1.x consideration)
 
 **Risks:**
@@ -219,16 +221,17 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 
 ---
 
-## Stage 5 — Macro mapping + Parameter system + First GUI pass (Week 5)
+## Stage 5 — Macro mapping + Character switch + First GUI pass (Week 5)
 
-**Goal:** Translate the 7 macros to the dozens of internal parameters via hand-designed curves. Get a functional (not pretty) GUI showing the 7 knobs. This is when the plugin becomes a *plugin* rather than a chain of modules.
+**Goal:** Translate Atmosphere, Burn, Pulse, and the Character switch to dozens of internal parameters via hand-designed curves. Get a functional (not pretty) GUI showing the locked v1 control surface. This is when the plugin becomes a *plugin* rather than a chain of modules.
 
 **End state:**
-- `Source/Params/ParameterLayout.{cpp,h}` defines the AudioProcessorValueTreeState with 7 macros + sync toggle exposed to the host.
-- `Source/Params/MacroMapping.{cpp,h}` implements each macro's mapping to internal DSP params. Curves hand-designed per Q-MAC-1, no overlap per Q-MAC-2.
-- All 7 macros automatable in Ableton.
+- `Source/Params/ParameterLayout.{cpp,h}` defines the AudioProcessorValueTreeState with Atmosphere, Burn, Pulse, Character mode, Day/Night, Output, Dry/Wet, and any stereo-width control resolved in Q-GUI-3.
+- `Source/Params/MacroMapping.{cpp,h}` implements macro offsets within each Character mode. Curves hand-designed per Q-MAC-1 and Q-MAC-3.
+- `CharacterPreset` or equivalent data structure represents Velvet / Onyx / Chrome snapshots.
+- All top-level controls automatable in Ableton where appropriate.
 - Smoothed parameter changes (no zipper noise, no clicks) — verified on automation ramps.
-- First GUI pass: 7 knobs visible, labelled, functional. Uses JUCE default LookAndFeel for now or a very thin custom one. Not the final design.
+- First GUI pass: three large macros, Character switch, Day/Night, Output, Dry/Wet, preset dropdown, and any resolved width control visible and functional. Uses JUCE default LookAndFeel for now or a very thin custom one. Not the final design.
 - GUI consumes Figma exports for layout reference but pixel-final design is stage 7.
 - Plugin state save/load works (Ableton saves/loads the project with plugin state intact).
 - Knob interaction model per Q-GUI-2.
@@ -236,9 +239,13 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 
 **Stop points to resolve in this stage:**
 - Q-MAC-1 (macro mapping curve design philosophy) — biggest call of the stage, half the product
-- Q-MAC-2 (macro range overlap — no overlap at v1)
+- Q-MAC-3 (Atmosphere meta-macro mapping curve)
+- Q-MAC-4 (whether Burn drives chorus depth at high values)
+- Q-CHAR-1 (Character switch selector/crossfade/morph behaviour)
 - Q-GUI-1 (GUI scale — fixed at v1)
 - Q-GUI-2 (knob interaction model)
+- Q-GUI-3 (stereo width control on main UI)
+- Q-GUI-4 (Day/Night toggle default visibility)
 
 **Deliverables:**
 - `Source/Params/ParameterLayout.{cpp,h}`
@@ -246,7 +253,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - `Source/GUI/MainComponent.{cpp,h}` (functional, not final design)
 - `Source/GUI/KnobComponent.{cpp,h}`
 - `Source/GUI/LookAndFeel.{cpp,h}` (stub)
-- PRs: `feature/parameter-system`, `feature/macro-mapping`, `feature/gui-first-pass`
+- PRs: `refactor/macro-parameter-renames`, `feature/atmosphere-routing`, `feature/character-switch`, `feature/gui-first-pass`
 - `decisions.md` entries documenting the *initial* macro mapping decisions (these will be revisited in stage 6)
 
 **Not in scope:**
@@ -268,24 +275,22 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 **Goal:** The single most important stage. Build the 60-preset factory bank that *is* the product. Use real source material in a real DAW. This is where taste does the heaviest lifting and where most of the remaining open questions get resolved.
 
 **End state:**
-- 60 presets shipped in `Resources/Presets/` (category split per Q-PRE-1).
-- Preset naming convention per Q-PRE-2 applied consistently.
+- 60 presets shipped in `Resources/Presets/` (themed category split per Q-PRE-1-REVISED).
+- Preset naming convention per Q-PRE-2-REVISED applied consistently.
 - Preset save/load UI in the GUI — at minimum, dropdown with category sections; ideally a proper browser.
-- Each preset tested against ≥1 piece of source material in the category (real vocal stems, real synth bounces, real drum loops).
-- Macro curves tuned per Q-SAT-2 and similar — the macros should *all* feel responsive across their full range, on at least one preset that exercises that macro.
-- Hysteresis parameter tuning resolved per Q-SAT-3.
+- Each preset tested against real source material across synth bus, vocal bus, and mix bus use cases.
+- Macro curves tuned per Q-SAT-2 and similar — Atmosphere, Burn, and Pulse should all feel responsive across their full range, on at least one preset that exercises that macro.
 - Each macro touches what feels right, not what was guessed in stage 5.
 - The chain is *locked* — no more DSP changes after this stage. Final DSP behaviour committed.
 
 **Stop points to resolve in this stage:**
-- Q-SAT-2 (Character macro drive curve)
-- Q-SAT-3 (hysteresis param tuning)
-- Q-PRE-1 (preset category split)
-- Q-PRE-2 (preset naming convention)
+- Q-SAT-2 (Burn macro drive curve)
+- Q-PRE-1-REVISED (themed preset split)
+- Q-PRE-2-REVISED (evocative preset naming)
 - Any straggler macro tuning surfaced during preset design
 
 **Deliverables:**
-- 60 preset JSON files in `Resources/Presets/Vocals/`, `/Synths/`, `/Drums/`
+- 60 preset JSON files in the themed directories resolved by Q-PRE-1-REVISED
 - `Source/Params/PresetManager.{cpp,h}`
 - `Source/GUI/PresetBrowser.{cpp,h}`
 - PRs: `feature/preset-manager`, `feature/preset-bank` (probably split into multiple PRs by category), `fix/macro-curves`
@@ -310,7 +315,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 **Goal:** Make it look like a real product. Build the activation infrastructure. Get to a signed, notarized, sellable artefact.
 
 **End state:**
-- Final GUI: custom LookAndFeel matching the Figma design. All 7 knobs, preset browser, brand mark, version label.
+- Final GUI: custom LookAndFeel matching the Figma design. Three macro knobs, Character switch, global controls, small preset dropdown, brand mark, version label.
 - Activation system working: Lemon Squeezy license key → plugin checks via API on launch, caches result.
 - Demo mode behaviour per Q-LIC-2 (whatever was decided — full demo, time-limited, or none).
 - Apple Developer Account active (should be by now per stage 4 enrolment). Developer ID Application cert installed.
@@ -398,7 +403,7 @@ Stage status in this file (update as work progresses):
 - Stage 0 — Pre-flight — **IN PROGRESS** (2026-05-24)
 - Stage 1 — Plumbing — **DONE ON BRANCH** (2026-05-24, verified locally; merge blocked by Stage 0 external deliverables)
 - Stage 2 — Tilt EQ + Saturation — **DONE** (2026-05-25, implementation verified and human A/B listening test passed)
-- Stage 3 — Chorus + Filter — NOT STARTED
+- Stage 3 — North-star alignment + Chorus + Filter — IN PROGRESS (2026-05-25; docs alignment before C++ work)
 - Stage 4 — Delay + ConvReverb — NOT STARTED
 - Stage 5 — Macros + GUI v1 — NOT STARTED
 - Stage 6 — Presets + Tuning — NOT STARTED

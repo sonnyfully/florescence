@@ -48,7 +48,8 @@ If the agent thinks a *new* ambiguity has appeared mid-work that meets the bar f
 - **Decisions go in `docs/decisions.md`** when they're non-obvious. Append-only, dated.
 - **Open questions go in `docs/open_questions.md`** when they require human judgment. See protocol above.
 - **Research synthesis goes in `docs/research/`** as one file per module or topic.
-- **Don't pick new dependencies without raising it.** The stack is JUCE + chowdsp_utils + Catch2. Anything else needs a `decisions.md` entry first.
+- **Don't pick new dependencies without raising it.** The stack is JUCE + Catch2; any optional DSP utility, including chowdsp_utils, needs licence review and a `decisions.md` entry before use.
+- **The north star is in `CONTEXT.md`.** Before any feature work, confirm the change supports the north star. If it doesn't, surface the conflict in the PR description rather than building it.
 
 ## Code style
 
