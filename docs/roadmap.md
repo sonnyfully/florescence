@@ -17,19 +17,34 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 
 ---
 
-## Stage 0 — Pre-flight (this week, before stage 1 starts)
+## Current reassessment — 2026-05-25
 
-**Goal:** Resolve every decision that gates stage 1 so the build starts pointed at a known target. No code in this stage.
+The codebase is ahead of some old roadmap gates, while a few external product-readiness items are still open. Treat this file as the current source of truth:
+
+- Stage 1 plumbing is merged to `main`.
+- Stage 2 Tilt EQ + Saturation code exists and is wired into the minimal chain. `ctest --test-dir build-juce8 --output-on-failure` passes 13/13 locally, including the VST3 smoke test. The older `build/` directory is stale/misconfigured and finds no tests.
+- Stage 3 is currently the `docs/revamp-north-star-alignment` docs branch. Chorus and Filter C++ work has **not** started.
+- Stage 0's unresolved non-code items no longer block Stage 3 engineering, but they are still product-readiness gates with due-by milestones below.
+- `README.md` is known stale about branch/stage status. Do not treat it as authoritative until a separate docs cleanup updates it.
+
+---
+
+## Stage 0 — Pre-flight identity decisions (engineering-unblocking)
+
+**Goal:** Resolve identity and technical decisions that must be known before engineering can proceed. No C++ feature work in this stage.
 
 **End state:**
-- Plugin name chosen and `.com` registered (Q-NAME-1).
+- Plugin name chosen (Q-NAME-1).
 - Bundle ID and vendor name decided (Q-NAME-2).
-- 5 reference tracks pinned in a playlist + `docs/aesthetic/reference-tracks.md` written.
-- 5 named beta customers written down in `docs/customers.md` (private).
-- IR sourcing strategy decided in principle (Q-IR-1) — paid library / free library / self-capture / mix. Actual IR acquisition happens in stage 5.
-- Figma file started — colour palette, typography, knob style, rough layout for the three macros, Character switch, and global controls. Doesn't need to be pixel-final.
+- IR sourcing strategy decided in principle (Q-IR-1) — paid library / free library / self-capture / mix. Actual IR acquisition happens in stage 4.
 - Apple Developer enrolment **not started yet** (deferred to end of stage 4 per Q-LIC-3).
-- Lemon Squeezy account created (no products set up yet).
+
+**Deferred product-readiness gates:**
+- 5 reference tracks pinned in a playlist + `docs/aesthetic/reference-tracks.md` written before Stage 6 tuning starts.
+- 5 named beta customers written down in local ignored `docs/customers.md` before Stage 7 beta distribution.
+- Figma direction started before Stage 7 GUI polish: colour palette, typography, knob style, rough layout for Atmosphere, Burn, Pulse, Character, and global controls. It does not need to be pixel-final before engineering continues.
+- Florescence domain registered before launch prep in Stage 7.
+- Lemon Squeezy account created before activation / launch prep in Stage 7.
 
 **Stop points to resolve in this stage:**
 - Q-NAME-1 (plugin name)
@@ -37,10 +52,8 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - Q-IR-1 (IR sourcing strategy — in principle)
 
 **Deliverables:**
-- `docs/aesthetic/reference-tracks.md`
-- `docs/customers.md` (gitignored or private branch)
-- Figma file (lives outside repo, link in `docs/decisions.md`)
-- Domain registered
+- `docs/decisions.md` entries for Q-NAME-1, Q-NAME-2, and Q-IR-1.
+- `docs/non-code-todos.md` tracks the deferred external items above.
 
 **Not in scope:**
 - Any C++ code
@@ -49,14 +62,15 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - Marketing site
 
 **Risks:**
-- *"I can't pick a name"* — set a 2-hour timebox and pick. The name is changeable until stage 1 commits it to the bundle ID. After that it's painful but not impossible.
-- *"I can't list 5 customers"* — real signal worth noticing. If genuinely can't, ask whether v1 should ship at all, or whether you need to spend stage 0 broadening the network first.
+- *External items drift too far into the build* — they no longer block Stage 3, but they do become hard gates at the stages listed above. Do not let Stage 6 begin without taste anchors, or Stage 7 begin without beta/customer/launch infrastructure.
 
 ---
 
 ## Stage 1 — Plumbing and throwaway plugin (Week 1)
 
 **Goal:** Prove the entire build → load → iterate loop works on a trivial plugin, before any real DSP lands.
+
+**Current status:** Done and merged to `main` via the plumbing PR. The branch-level "blocked by Stage 0 external deliverables" status is obsolete.
 
 **End state:**
 - Current JUCE stable checked out, CMake project building `CharacterFX_AU`, `CharacterFX_VST3`, and `CharacterFX_Standalone` targets.
@@ -97,23 +111,25 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 
 **Goal:** First two real DSP modules in the chain, audibly working on real audio. Saturation is the aesthetic anchor — if it doesn't sound right, nothing downstream saves it.
 
+**Current status:** Done on 2026-05-25. `TiltEQ`, `Saturation`, `FXModule`, deterministic Catch2 tests, and the minimal chain are present. Stage 2 still leaves Q-SAT-2 open for the Stage 6 Burn curve tuning pass.
+
 **End state:**
 - `FXModule` interface defined in `Source/DSP/FXModule.h` per `ARCHITECTURE.md`.
 - `TiltEQ` module: stereo, tilt parameter -12dB to +12dB at pivot ~1kHz, unit-tested for frequency response.
 - `Saturation` module: owned soft-clip + drive-coupled dynamic LPF per 2026-05-25 decision, drive parameter 0–1, 4x oversampled per Q-SAT-1, DC blocker, no static internal HF rolloff per Q-SAT-4, unity behaviour per Q-SAT-5.
 - Both modules plug into a minimal chain in `PluginProcessor::processBlock`.
 - Plugin's two front-panel knobs (still ugly GUI) are mapped to Tilt amount and Saturation drive — direct mapping, no Macro layer yet.
-- A/B test conducted on at least 3 reference tracks (vocal, synth, drum loop) — saturation character feels right or open question raised.
+- A/B listening check conducted on representative source material (vocal, synth, drum loop) — saturation character feels right or open question raised. The formal 5-track reference list is still due before Stage 6.
 - Unit tests in `Tests/test_tilteq.cpp` and `Tests/test_saturation.cpp` pass.
 - GPL chowdsp/CHOW Tape dependency explicitly rejected in `decisions.md`; no new CMake dependency for saturation.
 
-**Stop points to resolve in this stage:**
-- Q-SAT-1 (oversampling factor) — A/B at week 2 end
-- Q-SAT-4 (internal HF rolloff yes/no)
-- Q-SAT-5 (bypass behaviour at Character = 0)
+**Stop points resolved in this stage:**
+- Q-SAT-1 (oversampling factor) — resolved 2026-05-25
+- Q-SAT-4 (internal HF rolloff yes/no) — resolved 2026-05-25
+- Q-SAT-5 (bypass behaviour at drive/Burn = 0) — resolved 2026-05-25
 
 **Stop points deferred (to surface but not yet resolve):**
-- Q-SAT-2 (drive curve shape) — implement linear placeholder, surface that it needs revisit in stage 6
+- Q-SAT-2 (Burn macro drive curve shape) — linear placeholder is acceptable before Stage 6, but not final without human listening review
 - Q-SAT-3 (hysteresis param tuning) — resolved N/A after algorithm change; v1.x vintage mode would open a new question
 
 **Deliverables:**
@@ -143,6 +159,8 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 
 **Goal:** Align the project to the Florescence north star before code resumes, then build modulation stages working in true stereo so the chain feels "alive" rather than static.
 
+**Current status:** In progress as a docs/planning branch only. No Chorus or Filter C++ work should start until the Stage 3 stop points below are surfaced and resolved.
+
 **End state:**
 - North-star docs/planning PR merged before any Stage 3 C++ work.
 - `Chorus` module: BBD-flavoured (per Q-CHOR-1), N voices (per Q-CHOR-2), true stereo with decorrelated L/R LFO phases, depth and rate parameters.
@@ -154,10 +172,11 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - Two PRs merged.
 
 **Stop points to resolve in this stage:**
-- Q-CHOR-1 (BBD model fidelity)
-- Q-CHOR-2 (chorus voice count)
-- Q-FILT-1 (filter topology — confirm SVF is right)
-- Q-FILT-2 (envelope follower scope — input only vs sidechain capable)
+- Q-CHOR-1-LIC (chowdsp / BBD licensing) — **must be resolved before any Chorus implementation starts**
+- Q-CHOR-1 (BBD model fidelity) — resolve before Chorus PR merge
+- Q-CHOR-2 (chorus voice count) — resolve before Chorus PR merge
+- Q-FILT-1 (filter topology — confirm SVF is right) — resolve before Filter PR merge
+- Q-FILT-2 (envelope follower scope — input only vs sidechain capable) — resolve before Filter PR merge
 
 **Deliverables:**
 - Docs/planning PR: `docs/revamp-north-star-alignment`
@@ -173,8 +192,9 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - Macro mapping and Character switch implementation (stage 5)
 
 **Risks:**
+- *Licensing blocks the intended chorus direction* — Q-CHOR-1-LIC has no safe default. If chowdsp BBD primitives are GPLv3/incompatible, choose among a clean-room implementation, permissive Airwindows-flavoured code, pure delay-line modulation, or a commercial licence before writing code.
 - *Chorus phasing artefacts when summed to mono* — verify mono-compatibility, but accept that "true stereo" presets won't be mono-perfect. Document in `decisions.md` what the mono-sum tradeoff is.
-- *Envelope follower feels too snappy or too slow* — tunable, but pick reasonable defaults (attack ~10ms, release ~150ms) and revisit in stage 6.
+- *Envelope follower feels too snappy or too slow* — do not silently lock taste values. If Q-FILT-2 resolves to input-following, start from the documented 10ms / 150ms saturation precedent only as an audition baseline and revisit in Stage 6.
 
 ---
 
@@ -232,7 +252,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - All top-level controls automatable in Ableton where appropriate.
 - Smoothed parameter changes (no zipper noise, no clicks) — verified on automation ramps.
 - First GUI pass: three large macros, Character switch, Day/Night, Output, Dry/Wet, preset dropdown, and any resolved width control visible and functional. Uses JUCE default LookAndFeel for now or a very thin custom one. Not the final design.
-- GUI consumes Figma exports for layout reference but pixel-final design is stage 7.
+- GUI follows the locked control surface even if the Figma direction is still rough. Pixel-final design is Stage 7.
 - Plugin state save/load works (Ableton saves/loads the project with plugin state intact).
 - Knob interaction model per Q-GUI-2.
 - GUI scale strategy per Q-GUI-1.
@@ -262,6 +282,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - Preset browser (stage 6)
 - Activation/licensing (stage 7)
 - Marketing site (stage 7)
+- Per-module controls, per-module bypass, waveform/spectrum visualisations, or a prominent preset browser (explicitly cut from v1)
 
 **Risks:**
 - *Macro mapping feels dead at low values* — almost certain on first pass with linear curves. This is the whole point of Q-SAT-2 and similar — surface and tune in stage 6.
@@ -275,6 +296,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 **Goal:** The single most important stage. Build the 60-preset factory bank that *is* the product. Use real source material in a real DAW. This is where taste does the heaviest lifting and where most of the remaining open questions get resolved.
 
 **End state:**
+- 5 reference tracks are pinned and written up in `docs/aesthetic/reference-tracks.md` before tuning starts.
 - 60 presets shipped in `Resources/Presets/` (themed category split per Q-PRE-1-REVISED).
 - Preset naming convention per Q-PRE-2-REVISED applied consistently.
 - Preset save/load UI in the GUI — at minimum, dropdown with category sections; ideally a proper browser.
@@ -290,7 +312,8 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - Any straggler macro tuning surfaced during preset design
 
 **Deliverables:**
-- 60 preset JSON files in the themed directories resolved by Q-PRE-1-REVISED
+- `docs/aesthetic/reference-tracks.md` completed with the 5 taste anchors used for tuning
+- 60 preset JSON files in themed directories resolved by Q-PRE-1-REVISED
 - `Source/Params/PresetManager.{cpp,h}`
 - `Source/GUI/PresetBrowser.{cpp,h}`
 - PRs: `feature/preset-manager`, `feature/preset-bank` (probably split into multiple PRs by category), `fix/macro-curves`
@@ -304,6 +327,7 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - Adding new DSP features (the chain is locked at this stage's start)
 
 **Risks:**
+- *Reference tracks are still TBD* — Stage 6 must not start without them. The product is taste-led, so tuning without explicit anchors would reintroduce guessing.
 - *Underbudgeting preset design* — 60 presets in a week is ~12/day, ~1/hour at 8h days. Realistic. But each preset that *reveals a DSP problem* eats hours. Budget the buffer for this.
 - *Scope creep into DSP changes* — strong temptation when preset designing to "fix" the saturation curve, add a parameter, etc. Resist. The chain is locked. Bugs are exceptions; "wouldn't it be cool if" goes in `v1.x_ideas.md`.
 - *Preset bank feels uneven* — likely. Have a trusted ear (one of the named customers) review the bank at end of stage and flag the weakest 10. Replace or improve those before stage end.
@@ -315,14 +339,17 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 **Goal:** Make it look like a real product. Build the activation infrastructure. Get to a signed, notarized, sellable artefact.
 
 **End state:**
-- Final GUI: custom LookAndFeel matching the Figma design. Three macro knobs, Character switch, global controls, small preset dropdown, brand mark, version label.
+- Figma direction exists before GUI polish starts: colour palette, typography, knob style, and rough layout for Atmosphere, Burn, Pulse, Character, Day/Night, Output, Dry/Wet, and the small preset dropdown.
+- Final GUI: custom LookAndFeel matching the Figma direction. Three macro knobs, Character switch, global controls, small preset dropdown, brand mark, version label.
 - Activation system working: Lemon Squeezy license key → plugin checks via API on launch, caches result.
 - Demo mode behaviour per Q-LIC-2 (whatever was decided — full demo, time-limited, or none).
 - Apple Developer Account active (should be by now per stage 4 enrolment). Developer ID Application cert installed.
 - Signed AU and VST3 binaries. Notarized via `notarytool`. Stapled.
 - Installer (`.pkg`) built that installs to `/Library/Audio/Plug-Ins/Components/` and `/Library/Audio/Plug-Ins/VST3/`. Signed and notarized.
 - Marketing site: single landing page, video demo, audio examples (before/after on real material), pricing, buy button via Lemon Squeezy.
-- 5 named beta testers have the build, are giving feedback.
+- Florescence domain registered and pointed at the marketing site.
+- Lemon Squeezy account and product configured before activation/checkout work is considered complete.
+- 5 named beta testers are listed in local ignored `docs/customers.md`, have the build, and are giving feedback.
 - Critical-path beta feedback addressed (bugs, glaring sound issues). Polish feedback parked for v1.x.
 
 **Stop points to resolve in this stage:**
@@ -336,6 +363,8 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 - Built, signed, notarized `.pkg` installer
 - Marketing site (separate repo, deployed)
 - Lemon Squeezy product configured, license keys flowing
+- Domain configured for the marketing site
+- Local/private `docs/customers.md` filled with 5 beta testers
 - PRs: `feature/final-gui`, `feature/activation`, `feature/installer`
 - `decisions.md` final entries
 
@@ -400,10 +429,10 @@ A few rules that apply across every stage:
 
 Stage status in this file (update as work progresses):
 
-- Stage 0 — Pre-flight — **IN PROGRESS** (2026-05-24)
-- Stage 1 — Plumbing — **DONE ON BRANCH** (2026-05-24, verified locally; merge blocked by Stage 0 external deliverables)
+- Stage 0 — Pre-flight identity decisions — **DONE FOR ENGINEERING** (2026-05-24; remaining external items moved to due-by product-readiness gates)
+- Stage 1 — Plumbing — **DONE / MERGED** (2026-05-24)
 - Stage 2 — Tilt EQ + Saturation — **DONE** (2026-05-25, implementation verified and human A/B listening test passed)
-- Stage 3 — North-star alignment + Chorus + Filter — IN PROGRESS (2026-05-25; docs alignment before C++ work)
+- Stage 3 — North-star alignment + Chorus + Filter — **IN PROGRESS** (2026-05-25; docs alignment branch only, Chorus/Filter code not started)
 - Stage 4 — Delay + ConvReverb — NOT STARTED
 - Stage 5 — Macros + GUI v1 — NOT STARTED
 - Stage 6 — Presets + Tuning — NOT STARTED
