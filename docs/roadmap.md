@@ -266,6 +266,7 @@ The codebase is ahead of some old roadmap gates, while a few external product-re
 - Q-GUI-2 (knob interaction model)
 - Q-GUI-3 (stereo width control on main UI)
 - Q-GUI-4 (Day/Night toggle default visibility)
+Q-GUI-5, Q-CHAR-3, Q-MAC-DECOMP
 
 **Deliverables:**
 - `Source/Params/ParameterLayout.{cpp,h}`
@@ -275,6 +276,9 @@ The codebase is ahead of some old roadmap gates, while a few external product-re
 - `Source/GUI/LookAndFeel.{cpp,h}` (stub)
 - PRs: `refactor/macro-parameter-renames`, `feature/atmosphere-routing`, `feature/character-switch`, `feature/gui-first-pass`
 - `decisions.md` entries documenting the *initial* macro mapping decisions (these will be revisited in stage 6)
+- Macro decomposition table (Q-MAC-DECOMP) committed to docs/decisions.md as the audit trail of macro → internal-parameter mappings. This is a *required deliverable*, not just code — Stage 6 tuning depends on it being readable and reviewable.
+- Q-GUI-5 resolved (Day/Night semantic behaviour) and reflected in MacroMapping.
+- Q-CHAR-3 resolved (CharacterPreset state shape) and reflected in the CharacterPreset / equivalent data structure.
 
 **Not in scope:**
 - Preset save/load UI (stage 6)

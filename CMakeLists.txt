@@ -50,6 +50,7 @@ if(CHARACTERFX_BUILD_PLUGIN)
     target_sources(CharacterFX
         PRIVATE
             Source/DSP/Chorus.cpp
+            Source/DSP/Filter.cpp
             Source/DSP/JilesAtherton.cpp
             Source/DSP/TiltEQ.cpp
             Source/DSP/Saturation.cpp

@@ -37,4 +37,7 @@ TEST_CASE("built VST3 loads and exposes stage 3 DSP parameters") {
     REQUIRE(parameterNames.contains("Chorus Depth"));
     REQUIRE(parameterNames.contains("Chorus Rate"));
     REQUIRE(parameterNames.contains("Chorus Mix"));
+    REQUIRE(parameterNames.contains("Filter Cutoff"));
+    REQUIRE(parameterNames.contains("Filter Resonance"));
+    REQUIRE(parameterNames.contains("Filter Env"));
 }
