@@ -521,3 +521,118 @@ Affected files:
 - `Source/DSP/FilterConfig.h`
 - `Tests/test_filter.cpp`
 - `notebooks/filter_response.ipynb`
+
+## 2026-05-26 — Stage 4 delay, reverb, and signing decisions
+
+Resolved from `docs/open_questions.md`: Q-DEL-1, Q-DEL-2, Q-IR-2,
+Q-CHAR-2, Q-IR-4, and Q-LIC-3.
+
+### Q-DEL-1 — BPM sync divisions: **standard character-delay set**
+
+Decision: implement the standard set named below, with dotted 1/8 as the
+default selection on plugin load:
+
+- 1/4
+- dotted 1/4
+- 1/4 triplet
+- 1/8
+- dotted 1/8
+- 1/8 triplet
+- 1/16
+- dotted 1/16
+- 1/16 triplet
+
+Note: the source decision text described this as "10 divisions" but named nine
+specific divisions; this log records the explicit named set rather than adding
+an unapproved tenth value.
+
+Rationale: the standard set gives musically useful sync choices while skipping
+1/2 and 1/1 because those lengths are too long for a character delay.
+
+Affected files: future `Source/DSP/Delay.{h,cpp}`,
+future `Tests/test_delay.cpp`, and `docs/research/delay.md` if present.
+
+### Q-DEL-2 — Ping-pong topology: **internal mode toggle**
+
+Decision: add an internal `Topology` enum in `Delay.h` with `Stereo` and
+`PingPong` values. Expose the topology as an automatable parameter, but do not
+show it on the v1 main GUI.
+
+Rationale: an internal toggle keeps both stereo and ping-pong behaviours
+available while Stage 5 decides whether Character mode, Atmosphere, or a
+settings panel should control it.
+
+Affected files: future `Source/DSP/Delay.{h,cpp}`,
+future `Source/Params/ParameterLayout.{h,cpp}`, and future Stage 5 GUI/mapping
+files.
+
+### Q-IR-2 — IR count and category split: **10 initial IRs**
+
+Decision: curate 10 IRs for the first library:
+
+- 3 plate: bright EMT-style, darker plate, saturated/character plate
+- 2 hall: small wood hall, large cinematic hall
+- 2 chamber: intimate room, larger live room
+- 3 designed: long synthetic tail, modulated/breathing space,
+  characterful/dirty space
+
+Expand to 12 only if Stage 6 preset design reveals that Character modes are
+cramped.
+
+Rationale: 10 IRs gives each Character mode enough colour without bloating the
+resource footprint before preset design proves a need for more.
+
+Affected files: future `Resources/IRs/`, `docs/research/ir-sourcing.md`, and
+`docs/research/conv-reverb.md` if present.
+
+### Q-CHAR-2 — Character reverb behaviour: **shared IR pool with biasing**
+
+Decision: all IRs are available across Velvet, Onyx, and Chrome. Each
+Character mode has a default IR mapping per Atmosphere zone, and the user can
+override the selection. IR selection is not a separate front-panel control in
+v1; Atmosphere combines size, wet level, and IR selection bias into one macro.
+
+Rationale: a shared pool keeps modes flexible while still letting Character
+snapshots steer the reverb toward the intended emotional register.
+
+Affected files: future `Resources/IRs/`, future `Source/DSP/ConvReverb.{h,cpp}`,
+future `Source/Params/MacroMapping.{h,cpp}`, and future
+`Source/Params/CharacterPreset.{h,cpp}`.
+
+### Q-IR-4 — Wet path modulation: **subtle pre-convolution chorus**
+
+Decision: implement fixed subtle pre-convolution chorus in `ConvReverb.cpp`.
+The wet path modulation is single voice, not stereo-decorrelated, with depth
+around 0.2 percent and rate around 0.4 Hz. Values are fixed and not
+user-exposed. Pulse may optionally scale depth slightly at high values, but
+that belongs to Stage 5's Q-MAC-DECOMP table.
+
+Implementation note: keep these constants in a named block and cite this
+decision in the code comments.
+
+Rationale: pre-convolution movement gives the reverb a slow breathing quality
+without the artefact risk of modulating the convolved tail.
+
+Affected files: future `Source/DSP/ConvReverb.{h,cpp}`,
+future `Tests/test_convreverb.cpp`, and `docs/research/conv-reverb.md` if
+present.
+
+### Q-LIC-3 — Apple Developer enrolment timing: **end of Stage 4**
+
+Decision: enrol in the Apple Developer Program at the end of Stage 4 and prove
+the signing path with a throwaway notarization before Stage 7 starts.
+
+Concrete actions at the end of Stage 4:
+
+1. Enrol at `developer.apple.com` with an individual account.
+2. Generate a Developer ID Application certificate in Keychain Access.
+3. Set up an app-specific password for `notarytool`.
+4. Run throwaway notarization on the Stage 4 build to prove the pipeline.
+5. Document the workflow in `docs/build/notarization.md` so Stage 7 does not
+   re-derive it.
+
+Rationale: starting enrolment at the end of Stage 4 leaves time to absorb
+certificate or notarization issues before beta distribution.
+
+Affected files: future `docs/build/notarization.md` and release/signing
+workflow configuration.

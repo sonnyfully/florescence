@@ -70,15 +70,19 @@ See `decisions.md` 2026-05-25.
 
 Q-IR-1 moved to `docs/decisions.md` on 2026-05-24. Licence terms must still be re-verified in Stage 4 before any IR enters `Resources/IRs/`.
 
-### Q-IR-2: IR count and category split
+### ~~Q-IR-2: IR count and category split~~ — RESOLVED 2026-05-26
+**Resolved -> 10 IRs total:** 3 plate, 2 hall, 2 chamber, and 3 designed.
+Expand to 12 only if Stage 6 preset design proves Character modes are cramped.
+See `decisions.md` 2026-05-26 Stage 4 delay, reverb, and signing decisions.
+
 - Where it lives: `docs/research/ir-sourcing.md`
 - Triggered when: Designing the reverb library and resolving whether Character modes swap IR sets (Q-CHAR-2)
 - Options:
   - 8 IRs: 2 plate, 2 hall, 2 chamber, 2 designed
   - 12 IRs: more variety per category
   - 16 IRs: maximum variety, more binary size
-- Default if pushed: 8 (minimal viable), expand if the reverb library feels too narrow under the Character modes
-- Owner decision needed by: Week 4
+- Historical default if pushed: 8 (minimal viable), expand if the reverb library feels too narrow under the Character modes
+- Owner decision: resolved 2026-05-26
 
 ### ~~Q-IR-3: Space macro behaviour — selection vs morphing~~ — SUPERSEDED 2026-05-25
 **Superseded by the north-star control surface.** The Space macro no longer exists. Atmosphere drives reverb wet level per Q-MAC-3; IR character is tied to Character mode per Q-CHAR-2. The previous "Space selects vs morphs IRs" question no longer applies in this form.
@@ -92,7 +96,12 @@ Q-IR-1 moved to `docs/decisions.md` on 2026-05-24. Licence terms must still be r
 - Default if pushed: selection with crossfade — simplest, sounds clean, easy to reason about
 - Owner decision needed by: Week 4
 
-### Q-IR-4: Wet path modulation (the "alive" trick)
+### ~~Q-IR-4: Wet path modulation (the "alive" trick)~~ — RESOLVED 2026-05-26
+**Resolved -> subtle pre-convolution chorus.** Single voice, fixed depth around
+0.2 percent, fixed rate around 0.4 Hz, not user-exposed. Pulse may optionally
+scale the depth at high values if Q-MAC-DECOMP resolves that way in Stage 5.
+See `decisions.md` 2026-05-26 Stage 4 delay, reverb, and signing decisions.
+
 - Where it lives: `Source/DSP/ConvReverb.cpp`
 - Triggered when: Implementing wet path
 - Options:
@@ -100,8 +109,8 @@ Q-IR-1 moved to `docs/decisions.md` on 2026-05-24. Licence terms must still be r
   - Pre-convolution chorus on wet signal
   - Post-convolution chorus on wet signal
   - Subtle delay-line modulation in the wet path
-- Default if pushed: subtle pre-convolution chorus, depth ~0.3%, rate ~0.5Hz
-- Owner decision needed by: Week 4
+- Historical default if pushed: subtle pre-convolution chorus, depth ~0.3%, rate ~0.5Hz
+- Owner decision: resolved 2026-05-26
 
 ---
 
@@ -154,25 +163,36 @@ Filter stage, i.e. downstream of Saturation in the fixed chain. See
 
 ## Delay module
 
-### Q-DEL-1: BPM sync divisions
+### ~~Q-DEL-1: BPM sync divisions~~ — RESOLVED 2026-05-26
+**Resolved -> standard character-delay set, default dotted 1/8.** Use the
+explicitly named divisions: 1/4, dotted 1/4, 1/4 triplet, 1/8, dotted 1/8,
+1/8 triplet, 1/16, dotted 1/16, and 1/16 triplet. Skip 1/2 and 1/1.
+See `decisions.md` 2026-05-26 Stage 4 delay, reverb, and signing decisions.
+
 - Where it lives: `Source/DSP/Delay.cpp`
 - Triggered when: Implementing in week 4
 - Options:
   - Minimal: 1/4, 1/8, dotted-1/8, 1/16
   - Standard: above + triplets, dotted variants
   - Full: every common subdivision plus 1/2 and 1/1
-- Default if pushed: standard set
-- Owner decision needed by: Week 4
+- Historical default if pushed: standard set
+- Owner decision: resolved 2026-05-26
 
-### Q-DEL-2: Ping-pong topology
+### ~~Q-DEL-2: Ping-pong topology~~ — RESOLVED 2026-05-26
+**Resolved -> internal mode toggle.** Add a `Delay::Topology` enum with
+`Stereo` and `PingPong`; expose it as an automatable parameter but keep it off
+the v1 main GUI. Stage 5 decides whether Character mode, Atmosphere, or a
+settings panel controls it. See `decisions.md` 2026-05-26 Stage 4 delay,
+reverb, and signing decisions.
+
 - Where it lives: `Source/DSP/Delay.cpp`
 - Triggered when: Implementing
 - Options:
   - Independent L/R delay times, simple
   - True ping-pong (L feeds R's delay line and vice versa)
   - Mode toggle (stereo vs ping-pong)
-- Default if pushed: mode toggle
-- Owner decision needed by: Week 4
+- Historical default if pushed: mode toggle
+- Owner decision: resolved 2026-05-26
 
 ---
 
@@ -264,14 +284,20 @@ Filter stage, i.e. downstream of Saturation in the fixed chain. See
 - Default if pushed: crossfade over 50ms, click-free but feels instantaneous
 - Owner decision needed by: Week 5
 
-### Q-CHAR-2: Character switch — does it affect the reverb IR set?
+### ~~Q-CHAR-2: Character switch — does it affect the reverb IR set?~~ — RESOLVED 2026-05-26
+**Resolved -> shared IR pool with Character biasing.** All IRs are available in
+all Character modes; each mode has default IR mappings per Atmosphere zone and
+the user can override. IR selection is not a separate front-panel control in
+v1. See `decisions.md` 2026-05-26 Stage 4 delay, reverb, and signing
+decisions.
+
 - Where it lives: `Resources/IRs/`, `Source/DSP/ConvReverb.cpp`, `Source/Params/MacroMapping.cpp`
 - Triggered when: Designing CharacterPreset reverb values and IR library size
 - Options:
   - Each mode has its own IR list; switching mode swaps the IR set entirely
   - All IRs are available in all modes; each mode biases the default selection
-- Default if pushed: all IRs available in all modes, with Character mode biasing the default selection
-- Owner decision needed by: Week 4
+- Historical default if pushed: all IRs available in all modes, with Character mode biasing the default selection
+- Owner decision: resolved 2026-05-26
 
 ### Q-CHAR-3: CharacterPreset state shape
 - Where it lives: Source/Params/CharacterPreset.{h,cpp} (to be created in Stage 5)
@@ -414,15 +440,20 @@ Filter stage, i.e. downstream of Saturation in the fixed chain. See
 - Default if pushed: **NO DEFAULT** — meaningful UX decision, human call
 - Owner decision needed by: Week 6
 
-### Q-LIC-3: Apple Developer enrolment timing
+### ~~Q-LIC-3: Apple Developer enrolment timing~~ — RESOLVED 2026-05-26
+**Resolved -> enrol at the end of Stage 4.** Complete a throwaway notarization
+on the Stage 4 build before Stage 7 starts and document the workflow in
+`docs/build/notarization.md`. See `decisions.md` 2026-05-26 Stage 4 delay,
+reverb, and signing decisions.
+
 - Where it lives: external (Apple)
 - Triggered when: When conviction is real enough to ship
 - Options:
   - Enrol at week 1 (eat the cost upfront)
   - Enrol mid-week 5 / early week 6 (after the chain sounds right but before beta)
   - Enrol week 7 (last possible moment, riskier)
-- Default if pushed: end of week 4 / start of week 5 — leaves 2–3 weeks for notarization issues
-- Owner decision needed by: End of week 4
+- Historical default if pushed: end of week 4 / start of week 5 — leaves 2–3 weeks for notarization issues
+- Owner decision: resolved 2026-05-26
 
 ---
 
