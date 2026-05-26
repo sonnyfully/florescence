@@ -3,8 +3,6 @@
 #include "FXModule.h"
 #include "FilterConfig.h"
 
-#include <vector>
-
 // TPT state-variable low-pass with input envelope cutoff modulation.
 // References: JUCE `juce::dsp::StateVariableTPTFilter`; Zolzer, DAFX,
 // Chapter 2; Vadim Zavalishin, The Art of VA Filter Design.

@@ -18,30 +18,30 @@ class FlorescenceAudioProcessorEditor final : public juce::AudioProcessorEditor 
     FlorescenceAudioProcessor& audioProcessor;
 
     juce::Slider tiltSlider;
-    juce::Slider saturationSlider;
-    juce::Slider chorusDepthSlider;
-    juce::Slider chorusRateSlider;
-    juce::Slider chorusMixSlider;
+    juce::Slider burnSlider;
+    juce::Slider pulseDepthSlider;
+    juce::Slider pulseRateSlider;
+    juce::Slider pulseMixSlider;
     juce::Slider filterCutoffSlider;
     juce::Slider filterResonanceSlider;
-    juce::Slider filterEnvelopeDepthSlider;
+    juce::Slider pulseFilterDepthSlider;
     juce::Label tiltLabel;
-    juce::Label saturationLabel;
-    juce::Label chorusDepthLabel;
-    juce::Label chorusRateLabel;
-    juce::Label chorusMixLabel;
+    juce::Label burnLabel;
+    juce::Label pulseDepthLabel;
+    juce::Label pulseRateLabel;
+    juce::Label pulseMixLabel;
     juce::Label filterCutoffLabel;
     juce::Label filterResonanceLabel;
-    juce::Label filterEnvelopeDepthLabel;
+    juce::Label pulseFilterDepthLabel;
 
     std::unique_ptr<SliderAttachment> tiltAttachment;
-    std::unique_ptr<SliderAttachment> saturationAttachment;
-    std::unique_ptr<SliderAttachment> chorusDepthAttachment;
-    std::unique_ptr<SliderAttachment> chorusRateAttachment;
-    std::unique_ptr<SliderAttachment> chorusMixAttachment;
+    std::unique_ptr<SliderAttachment> burnAttachment;
+    std::unique_ptr<SliderAttachment> pulseDepthAttachment;
+    std::unique_ptr<SliderAttachment> pulseRateAttachment;
+    std::unique_ptr<SliderAttachment> pulseMixAttachment;
     std::unique_ptr<SliderAttachment> filterCutoffAttachment;
     std::unique_ptr<SliderAttachment> filterResonanceAttachment;
-    std::unique_ptr<SliderAttachment> filterEnvelopeDepthAttachment;
+    std::unique_ptr<SliderAttachment> pulseFilterDepthAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FlorescenceAudioProcessorEditor)
 };

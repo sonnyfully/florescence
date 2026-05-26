@@ -17,15 +17,16 @@ Stages are sequential — don't start stage N+1 until stage N's end state is met
 
 ---
 
-## Current reassessment — 2026-05-25
+## Current reassessment — 2026-05-26
 
 The codebase is ahead of some old roadmap gates, while a few external product-readiness items are still open. Treat this file as the current source of truth:
 
 - Stage 1 plumbing is merged to `main`.
-- Stage 2 Tilt EQ + Saturation code exists and is wired into the minimal chain. The saturation stage has been refactored to a clean-room Jiles-Atherton implementation; `ctest --test-dir build-juce8 --output-on-failure` passes 19/19 locally, including the VST3 smoke test. The older `build/` directory is stale/misconfigured and finds no tests.
-- Stage 3 is currently the `docs/revamp-north-star-alignment` docs branch. Chorus and Filter C++ work has **not** started.
+- Stage 2 Tilt EQ + Saturation code exists and is wired into the minimal chain. The saturation stage has been refactored to a clean-room Jiles-Atherton implementation.
+- Stage 3 Chorus and Filter code exists, is wired after Saturation, and is covered by deterministic tests. The current local suite is `ctest --test-dir build-juce8 --output-on-failure`, including the VST3 smoke test.
 - Stage 0's unresolved non-code items no longer block Stage 3 engineering, but they are still product-readiness gates with due-by milestones below.
-- `README.md` is known stale about branch/stage status. Do not treat it as authoritative until a separate docs cleanup updates it.
+- The old `build/` directory was stale and should not be treated as canonical. Use `build-juce8/` for local builds.
+- Resource payloads are still future-stage work: IRs arrive in Stage 4, macro/preset resources in Stage 5-6, and final graphics/fonts in Stage 7.
 
 ---
 
@@ -118,7 +119,7 @@ The codebase is ahead of some old roadmap gates, while a few external product-re
 - `TiltEQ` module: stereo, tilt parameter -12dB to +12dB at pivot ~1kHz, unit-tested for frequency response.
 - `Saturation` module: clean-room Jiles-Atherton hysteresis per the 2026-05-25 decision, drive parameter 0–1, 4x oversampled per Q-SAT-1, DC blocker, drive-coupled dynamic LPF plus fixed 8kHz post-saturator rolloff per the revised Q-SAT-4 history, unity behaviour per Q-SAT-5.
 - Both modules plug into a minimal chain in `PluginProcessor::processBlock`.
-- Plugin's two front-panel knobs (still ugly GUI) are mapped to Tilt amount and Saturation drive — direct mapping, no Macro layer yet.
+- The temporary development GUI exposes direct module controls while the Stage 5 macro layer is still pending. Burn currently drives Saturation directly; Pulse-labelled temporary controls drive Chorus motion/mix and Filter envelope depth.
 - A/B listening check conducted on representative source material (vocal, synth, drum loop) — saturation character feels right or open question raised. The formal 5-track reference list is still due before Stage 6.
 - Unit tests in `Tests/test_tilteq.cpp` and `Tests/test_saturation.cpp` pass.
 - GPL chowdsp/CHOW Tape dependency explicitly rejected in `decisions.md`; no new CMake dependency for saturation.
@@ -159,7 +160,7 @@ The codebase is ahead of some old roadmap gates, while a few external product-re
 
 **Goal:** Align the project to the Florescence north star before code resumes, then build modulation stages working in true stereo so the chain feels "alive" rather than static.
 
-**Current status:** In progress as a docs/planning branch only. No Chorus or Filter C++ work should start until the Stage 3 stop points below are surfaced and resolved.
+**Current status:** Implementation exists for Chorus and Filter, with Q-CHOR and Q-FILT stop points resolved in `docs/decisions.md`. Remaining Stage 3 work is the human A/B pass on representative source material and any follow-up decision that listening reveals.
 
 **End state:**
 - North-star docs/planning PR merged before any Stage 3 C++ work.
@@ -436,7 +437,7 @@ Stage status in this file (update as work progresses):
 - Stage 0 — Pre-flight identity decisions — **DONE FOR ENGINEERING** (2026-05-24; remaining external items moved to due-by product-readiness gates)
 - Stage 1 — Plumbing — **DONE / MERGED** (2026-05-24)
 - Stage 2 — Tilt EQ + Saturation — **DONE** (2026-05-25, implementation verified and human A/B listening test passed)
-- Stage 3 — North-star alignment + Chorus + Filter — **IN PROGRESS** (2026-05-25; docs alignment branch only, Chorus/Filter code not started)
+- Stage 3 — North-star alignment + Chorus + Filter — **IMPLEMENTED / LISTENING TODO** (2026-05-26; code and tests exist, human A/B pass still outstanding)
 - Stage 4 — Delay + ConvReverb — NOT STARTED
 - Stage 5 — Macros + GUI v1 — NOT STARTED
 - Stage 6 — Presets + Tuning — NOT STARTED

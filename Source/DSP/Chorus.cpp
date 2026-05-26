@@ -25,8 +25,6 @@ Chorus::Chorus(const juce::dsp::ProcessSpec& spec) {
 
 void Chorus::prepare(const juce::dsp::ProcessSpec& spec) {
     sampleRate = std::max(1.0, spec.sampleRate);
-    maximumBlockSize = spec.maximumBlockSize;
-    channelCount = spec.numChannels;
 
     depthSmoothed.reset(sampleRate, chorusconfig::parameterSmoothingTimeSeconds);
     rateSmoothed.reset(sampleRate, chorusconfig::parameterSmoothingTimeSeconds);

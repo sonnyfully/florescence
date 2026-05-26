@@ -3,15 +3,15 @@
 #include "PluginEditor.h"
 
 namespace {
-constexpr auto gainParameterId = "inputGain";
+constexpr auto outputTrimParameterId = "outputTrim";
 constexpr auto tiltParameterId = "tiltDb";
-constexpr auto saturationDriveParameterId = "saturationDrive";
-constexpr auto chorusDepthParameterId = "chorusDepth";
-constexpr auto chorusRateParameterId = "chorusRate";
-constexpr auto chorusMixParameterId = "chorusMix";
+constexpr auto burnParameterId = "burn";
+constexpr auto pulseDepthParameterId = "pulseDepth";
+constexpr auto pulseRateParameterId = "pulseRate";
+constexpr auto pulseMixParameterId = "pulseMix";
 constexpr auto filterCutoffParameterId = "filterCutoff";
 constexpr auto filterResonanceParameterId = "filterResonance";
-constexpr auto filterEnvelopeDepthParameterId = "filterEnvelopeDepth";
+constexpr auto pulseFilterDepthParameterId = "pulseFilterDepth";
 } // namespace
 
 FlorescenceAudioProcessor::FlorescenceAudioProcessor()
@@ -41,7 +41,7 @@ FlorescenceAudioProcessor::createParameterLayout() {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> layout;
 
     layout.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{gainParameterId, 1}, "Gain",
+        juce::ParameterID{outputTrimParameterId, 1}, "Output",
         juce::NormalisableRange<float>{-24.0f, 12.0f, 0.01f}, 0.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
 
@@ -51,24 +51,24 @@ FlorescenceAudioProcessor::createParameterLayout() {
         juce::AudioParameterFloatAttributes().withLabel("dB")));
 
     layout.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{saturationDriveParameterId, 1}, "Saturation",
+        juce::ParameterID{burnParameterId, 1}, "Burn",
         juce::NormalisableRange<float>{saturationconfig::driveMin, saturationconfig::driveMax,
                                        0.001f},
         0.0f));
 
     layout.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{chorusDepthParameterId, 1}, "Chorus Depth",
+        juce::ParameterID{pulseDepthParameterId, 1}, "Pulse Depth",
         juce::NormalisableRange<float>{chorusconfig::depthMin, chorusconfig::depthMax, 0.001f},
         0.5f));
 
     layout.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{chorusRateParameterId, 1}, "Chorus Rate",
+        juce::ParameterID{pulseRateParameterId, 1}, "Pulse Rate",
         juce::NormalisableRange<float>{chorusconfig::rateMinHz, chorusconfig::rateMaxHz, 0.001f,
                                        0.5f},
         0.8f, juce::AudioParameterFloatAttributes().withLabel("Hz")));
 
     layout.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{chorusMixParameterId, 1}, "Chorus Mix",
+        juce::ParameterID{pulseMixParameterId, 1}, "Pulse Mix",
         juce::NormalisableRange<float>{chorusconfig::mixMin, chorusconfig::mixMax, 0.001f}, 0.0f));
 
     layout.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -84,7 +84,7 @@ FlorescenceAudioProcessor::createParameterLayout() {
         filterconfig::resonanceDefault));
 
     layout.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{filterEnvelopeDepthParameterId, 1}, "Filter Env",
+        juce::ParameterID{pulseFilterDepthParameterId, 1}, "Pulse Filter",
         juce::NormalisableRange<float>{filterconfig::envelopeDepthMinOctaves,
                                        filterconfig::envelopeDepthMaxOctaves, 0.001f},
         filterconfig::envelopeDefaultDepthOctaves,
@@ -164,39 +164,38 @@ void FlorescenceAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
     for (auto channel = totalInputChannels; channel < totalOutputChannels; ++channel)
         buffer.clear(channel, 0, buffer.getNumSamples());
 
-    const auto gainDb = parameters.getRawParameterValue(gainParameterId)->load();
+    const auto outputTrimDb = parameters.getRawParameterValue(outputTrimParameterId)->load();
     const auto tiltDb = parameters.getRawParameterValue(tiltParameterId)->load();
-    const auto saturationDrive =
-        parameters.getRawParameterValue(saturationDriveParameterId)->load();
-    const auto chorusDepth = parameters.getRawParameterValue(chorusDepthParameterId)->load();
-    const auto chorusRateHz = parameters.getRawParameterValue(chorusRateParameterId)->load();
-    const auto chorusMix = parameters.getRawParameterValue(chorusMixParameterId)->load();
+    const auto burn = parameters.getRawParameterValue(burnParameterId)->load();
+    const auto pulseDepth = parameters.getRawParameterValue(pulseDepthParameterId)->load();
+    const auto pulseRateHz = parameters.getRawParameterValue(pulseRateParameterId)->load();
+    const auto pulseMix = parameters.getRawParameterValue(pulseMixParameterId)->load();
     const auto filterCutoffHz = parameters.getRawParameterValue(filterCutoffParameterId)->load();
     const auto filterResonance =
         parameters.getRawParameterValue(filterResonanceParameterId)->load();
-    const auto filterEnvelopeDepth =
-        parameters.getRawParameterValue(filterEnvelopeDepthParameterId)->load();
-    const auto gain = juce::Decibels::decibelsToGain(gainDb);
+    const auto pulseFilterDepth =
+        parameters.getRawParameterValue(pulseFilterDepthParameterId)->load();
+    const auto outputGain = juce::Decibels::decibelsToGain(outputTrimDb);
 
     if (tiltEq != nullptr)
         tiltEq->setTiltDb(tiltDb);
 
     if (saturation != nullptr)
-        saturation->setDrive(saturationDrive);
+        saturation->setDrive(burn);
 
     if (chorus != nullptr) {
-        chorus->setDepth(chorusDepth);
-        chorus->setRateHz(chorusRateHz);
-        chorus->setMix(chorusMix);
+        chorus->setDepth(pulseDepth);
+        chorus->setRateHz(pulseRateHz);
+        chorus->setMix(pulseMix);
     }
 
     if (filter != nullptr) {
         filter->setCutoffHz(filterCutoffHz);
         filter->setResonance(filterResonance);
-        filter->setEnvelopeDepthOctaves(filterEnvelopeDepth);
+        filter->setEnvelopeDepthOctaves(pulseFilterDepth);
     }
 
-    buffer.applyGain(gain);
+    buffer.applyGain(outputGain);
 
     auto block = juce::dsp::AudioBlock<float>(buffer);
     for (auto& module : fxChain)

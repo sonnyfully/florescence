@@ -72,8 +72,6 @@ class Chorus final : public FXModule {
     juce::SmoothedValue<float> rateSmoothed;
     juce::SmoothedValue<float> mixSmoothed;
     double sampleRate = 48000.0;
-    juce::uint32 maximumBlockSize = 0;
-    juce::uint32 channelCount = 0;
     float depth = 0.0f;
     float rateHz = 0.25f;
     float mix = 0.0f;

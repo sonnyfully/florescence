@@ -2,13 +2,13 @@
 
 namespace {
 constexpr auto tiltParameterId = "tiltDb";
-constexpr auto saturationDriveParameterId = "saturationDrive";
-constexpr auto chorusDepthParameterId = "chorusDepth";
-constexpr auto chorusRateParameterId = "chorusRate";
-constexpr auto chorusMixParameterId = "chorusMix";
+constexpr auto burnParameterId = "burn";
+constexpr auto pulseDepthParameterId = "pulseDepth";
+constexpr auto pulseRateParameterId = "pulseRate";
+constexpr auto pulseMixParameterId = "pulseMix";
 constexpr auto filterCutoffParameterId = "filterCutoff";
 constexpr auto filterResonanceParameterId = "filterResonance";
-constexpr auto filterEnvelopeDepthParameterId = "filterEnvelopeDepth";
+constexpr auto pulseFilterDepthParameterId = "pulseFilterDepth";
 
 void configureSlider(juce::Slider& slider) {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -25,55 +25,54 @@ FlorescenceAudioProcessorEditor::FlorescenceAudioProcessorEditor(
     FlorescenceAudioProcessor& ownerProcessor)
     : AudioProcessorEditor(&ownerProcessor), audioProcessor(ownerProcessor) {
     configureSlider(tiltSlider);
-    configureSlider(saturationSlider);
-    configureSlider(chorusDepthSlider);
-    configureSlider(chorusRateSlider);
-    configureSlider(chorusMixSlider);
+    configureSlider(burnSlider);
+    configureSlider(pulseDepthSlider);
+    configureSlider(pulseRateSlider);
+    configureSlider(pulseMixSlider);
     configureSlider(filterCutoffSlider);
     configureSlider(filterResonanceSlider);
-    configureSlider(filterEnvelopeDepthSlider);
+    configureSlider(pulseFilterDepthSlider);
     configureLabel(tiltLabel, "Tilt");
-    configureLabel(saturationLabel, "Saturation");
-    configureLabel(chorusDepthLabel, "Chorus Depth");
-    configureLabel(chorusRateLabel, "Chorus Rate");
-    configureLabel(chorusMixLabel, "Chorus Mix");
+    configureLabel(burnLabel, "Burn");
+    configureLabel(pulseDepthLabel, "Pulse Depth");
+    configureLabel(pulseRateLabel, "Pulse Rate");
+    configureLabel(pulseMixLabel, "Pulse Mix");
     configureLabel(filterCutoffLabel, "Filter Cutoff");
     configureLabel(filterResonanceLabel, "Filter Res");
-    configureLabel(filterEnvelopeDepthLabel, "Filter Env");
+    configureLabel(pulseFilterDepthLabel, "Pulse Filter");
 
     addAndMakeVisible(tiltSlider);
-    addAndMakeVisible(saturationSlider);
-    addAndMakeVisible(chorusDepthSlider);
-    addAndMakeVisible(chorusRateSlider);
-    addAndMakeVisible(chorusMixSlider);
+    addAndMakeVisible(burnSlider);
+    addAndMakeVisible(pulseDepthSlider);
+    addAndMakeVisible(pulseRateSlider);
+    addAndMakeVisible(pulseMixSlider);
     addAndMakeVisible(filterCutoffSlider);
     addAndMakeVisible(filterResonanceSlider);
-    addAndMakeVisible(filterEnvelopeDepthSlider);
+    addAndMakeVisible(pulseFilterDepthSlider);
     addAndMakeVisible(tiltLabel);
-    addAndMakeVisible(saturationLabel);
-    addAndMakeVisible(chorusDepthLabel);
-    addAndMakeVisible(chorusRateLabel);
-    addAndMakeVisible(chorusMixLabel);
+    addAndMakeVisible(burnLabel);
+    addAndMakeVisible(pulseDepthLabel);
+    addAndMakeVisible(pulseRateLabel);
+    addAndMakeVisible(pulseMixLabel);
     addAndMakeVisible(filterCutoffLabel);
     addAndMakeVisible(filterResonanceLabel);
-    addAndMakeVisible(filterEnvelopeDepthLabel);
+    addAndMakeVisible(pulseFilterDepthLabel);
 
     auto& parameters = audioProcessor.getParameters();
     tiltAttachment = std::make_unique<SliderAttachment>(parameters, tiltParameterId, tiltSlider);
-    saturationAttachment = std::make_unique<SliderAttachment>(
-        parameters, saturationDriveParameterId, saturationSlider);
-    chorusDepthAttachment =
-        std::make_unique<SliderAttachment>(parameters, chorusDepthParameterId, chorusDepthSlider);
-    chorusRateAttachment =
-        std::make_unique<SliderAttachment>(parameters, chorusRateParameterId, chorusRateSlider);
-    chorusMixAttachment =
-        std::make_unique<SliderAttachment>(parameters, chorusMixParameterId, chorusMixSlider);
+    burnAttachment = std::make_unique<SliderAttachment>(parameters, burnParameterId, burnSlider);
+    pulseDepthAttachment =
+        std::make_unique<SliderAttachment>(parameters, pulseDepthParameterId, pulseDepthSlider);
+    pulseRateAttachment =
+        std::make_unique<SliderAttachment>(parameters, pulseRateParameterId, pulseRateSlider);
+    pulseMixAttachment =
+        std::make_unique<SliderAttachment>(parameters, pulseMixParameterId, pulseMixSlider);
     filterCutoffAttachment =
         std::make_unique<SliderAttachment>(parameters, filterCutoffParameterId, filterCutoffSlider);
     filterResonanceAttachment = std::make_unique<SliderAttachment>(
         parameters, filterResonanceParameterId, filterResonanceSlider);
-    filterEnvelopeDepthAttachment = std::make_unique<SliderAttachment>(
-        parameters, filterEnvelopeDepthParameterId, filterEnvelopeDepthSlider);
+    pulseFilterDepthAttachment = std::make_unique<SliderAttachment>(
+        parameters, pulseFilterDepthParameterId, pulseFilterDepthSlider);
 
     setSize(1040, 260);
 }
@@ -92,28 +91,28 @@ void FlorescenceAudioProcessorEditor::resized() {
 
     auto columnWidth = bounds.getWidth() / 8;
     auto tiltColumn = bounds.removeFromLeft(columnWidth).reduced(8);
-    auto saturationColumn = bounds.removeFromLeft(columnWidth).reduced(8);
-    auto chorusDepthColumn = bounds.removeFromLeft(columnWidth).reduced(8);
-    auto chorusRateColumn = bounds.removeFromLeft(columnWidth).reduced(8);
-    auto chorusMixColumn = bounds.removeFromLeft(columnWidth).reduced(8);
+    auto burnColumn = bounds.removeFromLeft(columnWidth).reduced(8);
+    auto pulseDepthColumn = bounds.removeFromLeft(columnWidth).reduced(8);
+    auto pulseRateColumn = bounds.removeFromLeft(columnWidth).reduced(8);
+    auto pulseMixColumn = bounds.removeFromLeft(columnWidth).reduced(8);
     auto filterCutoffColumn = bounds.removeFromLeft(columnWidth).reduced(8);
     auto filterResonanceColumn = bounds.removeFromLeft(columnWidth).reduced(8);
-    auto filterEnvelopeDepthColumn = bounds.reduced(8);
+    auto pulseFilterDepthColumn = bounds.reduced(8);
 
     tiltLabel.setBounds(tiltColumn.removeFromTop(24));
     tiltSlider.setBounds(tiltColumn);
-    saturationLabel.setBounds(saturationColumn.removeFromTop(24));
-    saturationSlider.setBounds(saturationColumn);
-    chorusDepthLabel.setBounds(chorusDepthColumn.removeFromTop(24));
-    chorusDepthSlider.setBounds(chorusDepthColumn);
-    chorusRateLabel.setBounds(chorusRateColumn.removeFromTop(24));
-    chorusRateSlider.setBounds(chorusRateColumn);
-    chorusMixLabel.setBounds(chorusMixColumn.removeFromTop(24));
-    chorusMixSlider.setBounds(chorusMixColumn);
+    burnLabel.setBounds(burnColumn.removeFromTop(24));
+    burnSlider.setBounds(burnColumn);
+    pulseDepthLabel.setBounds(pulseDepthColumn.removeFromTop(24));
+    pulseDepthSlider.setBounds(pulseDepthColumn);
+    pulseRateLabel.setBounds(pulseRateColumn.removeFromTop(24));
+    pulseRateSlider.setBounds(pulseRateColumn);
+    pulseMixLabel.setBounds(pulseMixColumn.removeFromTop(24));
+    pulseMixSlider.setBounds(pulseMixColumn);
     filterCutoffLabel.setBounds(filterCutoffColumn.removeFromTop(24));
     filterCutoffSlider.setBounds(filterCutoffColumn);
     filterResonanceLabel.setBounds(filterResonanceColumn.removeFromTop(24));
     filterResonanceSlider.setBounds(filterResonanceColumn);
-    filterEnvelopeDepthLabel.setBounds(filterEnvelopeDepthColumn.removeFromTop(24));
-    filterEnvelopeDepthSlider.setBounds(filterEnvelopeDepthColumn);
+    pulseFilterDepthLabel.setBounds(pulseFilterDepthColumn.removeFromTop(24));
+    pulseFilterDepthSlider.setBounds(pulseFilterDepthColumn);
 }
