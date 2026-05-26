@@ -16,6 +16,7 @@ constexpr auto delayDivisionParameterId = "delayDivision";
 constexpr auto delayFeedbackParameterId = "delayFeedback";
 constexpr auto delayMixParameterId = "delayMix";
 constexpr auto delayTopologyParameterId = "delayTopology";
+constexpr auto reverbMixParameterId = "reverbMix";
 
 juce::StringArray getDelayDivisionNames() {
     juce::StringArray names;
@@ -51,6 +52,10 @@ FlorescenceAudioProcessor::FlorescenceAudioProcessor()
     auto delayModule = std::make_unique<Delay>();
     delay = delayModule.get();
     fxChain.push_back(std::move(delayModule));
+
+    auto convReverbModule = std::make_unique<ConvReverb>();
+    convReverb = convReverbModule.get();
+    fxChain.push_back(std::move(convReverbModule));
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout
@@ -124,6 +129,12 @@ FlorescenceAudioProcessor::createParameterLayout() {
     layout.push_back(std::make_unique<juce::AudioParameterChoice>(
         juce::ParameterID{delayTopologyParameterId, 1}, "Delay Topology",
         juce::StringArray{"Stereo", "Ping Pong"}, static_cast<int>(Delay::Topology::Stereo)));
+
+    layout.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{reverbMixParameterId, 1}, "Reverb Mix",
+        juce::NormalisableRange<float>{convreverbconfig::wetMixMin, convreverbconfig::wetMixMax,
+                                       0.001f},
+        convreverbconfig::wetMixDefault));
 
     return {layout.begin(), layout.end()};
 }
@@ -216,6 +227,7 @@ void FlorescenceAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
     const auto delayMix = parameters.getRawParameterValue(delayMixParameterId)->load();
     const auto delayTopologyIndex =
         static_cast<int>(parameters.getRawParameterValue(delayTopologyParameterId)->load());
+    const auto reverbMix = parameters.getRawParameterValue(reverbMixParameterId)->load();
     const auto outputGain = juce::Decibels::decibelsToGain(outputTrimDb);
 
     if (tiltEq != nullptr)
@@ -251,6 +263,9 @@ void FlorescenceAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
                                ? Delay::Topology::PingPong
                                : Delay::Topology::Stereo);
     }
+
+    if (convReverb != nullptr)
+        convReverb->setWetMix(reverbMix);
 
     buffer.applyGain(outputGain);
 

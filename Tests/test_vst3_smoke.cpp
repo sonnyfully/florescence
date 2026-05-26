@@ -44,4 +44,5 @@ TEST_CASE("built VST3 loads and exposes north-star-aligned stage 4 parameters") 
     REQUIRE(parameterNames.contains("Delay Feedback"));
     REQUIRE(parameterNames.contains("Delay Mix"));
     REQUIRE(parameterNames.contains("Delay Topology"));
+    REQUIRE(parameterNames.contains("Reverb Mix"));
 }

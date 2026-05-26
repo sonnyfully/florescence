@@ -11,6 +11,7 @@ constexpr auto filterResonanceParameterId = "filterResonance";
 constexpr auto pulseFilterDepthParameterId = "pulseFilterDepth";
 constexpr auto delayFeedbackParameterId = "delayFeedback";
 constexpr auto delayMixParameterId = "delayMix";
+constexpr auto reverbMixParameterId = "reverbMix";
 
 void configureSlider(juce::Slider& slider) {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -36,6 +37,7 @@ FlorescenceAudioProcessorEditor::FlorescenceAudioProcessorEditor(
     configureSlider(pulseFilterDepthSlider);
     configureSlider(delayFeedbackSlider);
     configureSlider(delayMixSlider);
+    configureSlider(reverbMixSlider);
     configureLabel(tiltLabel, "Tilt");
     configureLabel(burnLabel, "Burn");
     configureLabel(pulseDepthLabel, "Pulse Depth");
@@ -46,6 +48,7 @@ FlorescenceAudioProcessorEditor::FlorescenceAudioProcessorEditor(
     configureLabel(pulseFilterDepthLabel, "Pulse Filter");
     configureLabel(delayFeedbackLabel, "Delay Feedback");
     configureLabel(delayMixLabel, "Delay Mix");
+    configureLabel(reverbMixLabel, "Reverb Mix");
 
     addAndMakeVisible(tiltSlider);
     addAndMakeVisible(burnSlider);
@@ -57,6 +60,7 @@ FlorescenceAudioProcessorEditor::FlorescenceAudioProcessorEditor(
     addAndMakeVisible(pulseFilterDepthSlider);
     addAndMakeVisible(delayFeedbackSlider);
     addAndMakeVisible(delayMixSlider);
+    addAndMakeVisible(reverbMixSlider);
     addAndMakeVisible(tiltLabel);
     addAndMakeVisible(burnLabel);
     addAndMakeVisible(pulseDepthLabel);
@@ -67,6 +71,7 @@ FlorescenceAudioProcessorEditor::FlorescenceAudioProcessorEditor(
     addAndMakeVisible(pulseFilterDepthLabel);
     addAndMakeVisible(delayFeedbackLabel);
     addAndMakeVisible(delayMixLabel);
+    addAndMakeVisible(reverbMixLabel);
 
     auto& parameters = audioProcessor.getParameters();
     tiltAttachment = std::make_unique<SliderAttachment>(parameters, tiltParameterId, tiltSlider);
@@ -87,8 +92,10 @@ FlorescenceAudioProcessorEditor::FlorescenceAudioProcessorEditor(
         parameters, delayFeedbackParameterId, delayFeedbackSlider);
     delayMixAttachment =
         std::make_unique<SliderAttachment>(parameters, delayMixParameterId, delayMixSlider);
+    reverbMixAttachment =
+        std::make_unique<SliderAttachment>(parameters, reverbMixParameterId, reverbMixSlider);
 
-    setSize(1280, 260);
+    setSize(1400, 260);
 }
 
 void FlorescenceAudioProcessorEditor::paint(juce::Graphics& graphics) {
@@ -103,7 +110,7 @@ void FlorescenceAudioProcessorEditor::resized() {
     auto bounds = getLocalBounds().reduced(24);
     bounds.removeFromTop(40);
 
-    auto columnWidth = bounds.getWidth() / 10;
+    auto columnWidth = bounds.getWidth() / 11;
     auto tiltColumn = bounds.removeFromLeft(columnWidth).reduced(8);
     auto burnColumn = bounds.removeFromLeft(columnWidth).reduced(8);
     auto pulseDepthColumn = bounds.removeFromLeft(columnWidth).reduced(8);
@@ -113,7 +120,8 @@ void FlorescenceAudioProcessorEditor::resized() {
     auto filterResonanceColumn = bounds.removeFromLeft(columnWidth).reduced(8);
     auto pulseFilterDepthColumn = bounds.removeFromLeft(columnWidth).reduced(8);
     auto delayFeedbackColumn = bounds.removeFromLeft(columnWidth).reduced(8);
-    auto delayMixColumn = bounds.reduced(8);
+    auto delayMixColumn = bounds.removeFromLeft(columnWidth).reduced(8);
+    auto reverbMixColumn = bounds.reduced(8);
 
     tiltLabel.setBounds(tiltColumn.removeFromTop(24));
     tiltSlider.setBounds(tiltColumn);
@@ -135,4 +143,6 @@ void FlorescenceAudioProcessorEditor::resized() {
     delayFeedbackSlider.setBounds(delayFeedbackColumn);
     delayMixLabel.setBounds(delayMixColumn.removeFromTop(24));
     delayMixSlider.setBounds(delayMixColumn);
+    reverbMixLabel.setBounds(reverbMixColumn.removeFromTop(24));
+    reverbMixSlider.setBounds(reverbMixColumn);
 }
