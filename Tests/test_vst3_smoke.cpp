@@ -2,7 +2,7 @@
 
 #include <juce_audio_processors_headless/juce_audio_processors_headless.h>
 
-TEST_CASE("built VST3 loads and exposes north-star-aligned stage 3 parameters") {
+TEST_CASE("built VST3 loads and exposes north-star-aligned stage 4 parameters") {
     juce::VST3PluginFormatHeadless format;
     juce::OwnedArray<juce::PluginDescription> descriptions;
 
@@ -40,4 +40,8 @@ TEST_CASE("built VST3 loads and exposes north-star-aligned stage 3 parameters") 
     REQUIRE(parameterNames.contains("Filter Cutoff"));
     REQUIRE(parameterNames.contains("Filter Resonance"));
     REQUIRE(parameterNames.contains("Pulse Filter"));
+    REQUIRE(parameterNames.contains("Delay Division"));
+    REQUIRE(parameterNames.contains("Delay Feedback"));
+    REQUIRE(parameterNames.contains("Delay Mix"));
+    REQUIRE(parameterNames.contains("Delay Topology"));
 }

@@ -12,6 +12,19 @@ constexpr auto pulseMixParameterId = "pulseMix";
 constexpr auto filterCutoffParameterId = "filterCutoff";
 constexpr auto filterResonanceParameterId = "filterResonance";
 constexpr auto pulseFilterDepthParameterId = "pulseFilterDepth";
+constexpr auto delayDivisionParameterId = "delayDivision";
+constexpr auto delayFeedbackParameterId = "delayFeedback";
+constexpr auto delayMixParameterId = "delayMix";
+constexpr auto delayTopologyParameterId = "delayTopology";
+
+juce::StringArray getDelayDivisionNames() {
+    juce::StringArray names;
+
+    for (auto index = 0; index < Delay::getSyncDivisionCount(); ++index)
+        names.add(Delay::getSyncDivisionName(Delay::syncDivisionFromIndex(index)));
+
+    return names;
+}
 } // namespace
 
 FlorescenceAudioProcessor::FlorescenceAudioProcessor()
@@ -34,6 +47,10 @@ FlorescenceAudioProcessor::FlorescenceAudioProcessor()
     auto filterModule = std::make_unique<Filter>();
     filter = filterModule.get();
     fxChain.push_back(std::move(filterModule));
+
+    auto delayModule = std::make_unique<Delay>();
+    delay = delayModule.get();
+    fxChain.push_back(std::move(delayModule));
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout
@@ -89,6 +106,24 @@ FlorescenceAudioProcessor::createParameterLayout() {
                                        filterconfig::envelopeDepthMaxOctaves, 0.001f},
         filterconfig::envelopeDefaultDepthOctaves,
         juce::AudioParameterFloatAttributes().withLabel("oct")));
+
+    layout.push_back(std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{delayDivisionParameterId, 1}, "Delay Division", getDelayDivisionNames(),
+        Delay::syncDivisionToIndex(Delay::getDefaultSyncDivision())));
+
+    layout.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{delayFeedbackParameterId, 1}, "Delay Feedback",
+        juce::NormalisableRange<float>{delayconfig::feedbackMin, delayconfig::feedbackMax, 0.001f},
+        delayconfig::feedbackDefault));
+
+    layout.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{delayMixParameterId, 1}, "Delay Mix",
+        juce::NormalisableRange<float>{delayconfig::mixMin, delayconfig::mixMax, 0.001f},
+        delayconfig::mixDefault));
+
+    layout.push_back(std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{delayTopologyParameterId, 1}, "Delay Topology",
+        juce::StringArray{"Stereo", "Ping Pong"}, static_cast<int>(Delay::Topology::Stereo)));
 
     return {layout.begin(), layout.end()};
 }
@@ -175,6 +210,12 @@ void FlorescenceAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
         parameters.getRawParameterValue(filterResonanceParameterId)->load();
     const auto pulseFilterDepth =
         parameters.getRawParameterValue(pulseFilterDepthParameterId)->load();
+    const auto delayDivisionIndex =
+        static_cast<int>(parameters.getRawParameterValue(delayDivisionParameterId)->load());
+    const auto delayFeedback = parameters.getRawParameterValue(delayFeedbackParameterId)->load();
+    const auto delayMix = parameters.getRawParameterValue(delayMixParameterId)->load();
+    const auto delayTopologyIndex =
+        static_cast<int>(parameters.getRawParameterValue(delayTopologyParameterId)->load());
     const auto outputGain = juce::Decibels::decibelsToGain(outputTrimDb);
 
     if (tiltEq != nullptr)
@@ -193,6 +234,22 @@ void FlorescenceAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, j
         filter->setCutoffHz(filterCutoffHz);
         filter->setResonance(filterResonance);
         filter->setEnvelopeDepthOctaves(pulseFilterDepth);
+    }
+
+    if (delay != nullptr) {
+        if (auto* playHead = getPlayHead()) {
+            if (const auto position = playHead->getPosition()) {
+                if (const auto bpm = position->getBpm())
+                    delay->setTempoBpm(*bpm);
+            }
+        }
+
+        delay->setSyncDivision(Delay::syncDivisionFromIndex(delayDivisionIndex));
+        delay->setFeedback(delayFeedback);
+        delay->setMix(delayMix);
+        delay->setTopology(delayTopologyIndex == static_cast<int>(Delay::Topology::PingPong)
+                               ? Delay::Topology::PingPong
+                               : Delay::Topology::Stereo);
     }
 
     buffer.applyGain(outputGain);
