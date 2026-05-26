@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include "DSP/Chorus.h"
+#include "DSP/Delay.h"
 #include "DSP/FXModule.h"
 #include "DSP/Filter.h"
 #include "DSP/Saturation.h"
@@ -55,6 +56,7 @@ class FlorescenceAudioProcessor final : public juce::AudioProcessor {
     Saturation* saturation = nullptr;
     Chorus* chorus = nullptr;
     Filter* filter = nullptr;
+    Delay* delay = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FlorescenceAudioProcessor)
 };
