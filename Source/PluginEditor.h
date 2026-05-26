@@ -27,6 +27,7 @@ class FlorescenceAudioProcessorEditor final : public juce::AudioProcessorEditor 
     juce::Slider pulseFilterDepthSlider;
     juce::Slider delayFeedbackSlider;
     juce::Slider delayMixSlider;
+    juce::Slider reverbMixSlider;
     juce::Label tiltLabel;
     juce::Label burnLabel;
     juce::Label pulseDepthLabel;
@@ -37,6 +38,7 @@ class FlorescenceAudioProcessorEditor final : public juce::AudioProcessorEditor 
     juce::Label pulseFilterDepthLabel;
     juce::Label delayFeedbackLabel;
     juce::Label delayMixLabel;
+    juce::Label reverbMixLabel;
 
     std::unique_ptr<SliderAttachment> tiltAttachment;
     std::unique_ptr<SliderAttachment> burnAttachment;
@@ -48,6 +50,7 @@ class FlorescenceAudioProcessorEditor final : public juce::AudioProcessorEditor 
     std::unique_ptr<SliderAttachment> pulseFilterDepthAttachment;
     std::unique_ptr<SliderAttachment> delayFeedbackAttachment;
     std::unique_ptr<SliderAttachment> delayMixAttachment;
+    std::unique_ptr<SliderAttachment> reverbMixAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FlorescenceAudioProcessorEditor)
 };
